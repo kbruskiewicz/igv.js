@@ -170,7 +170,7 @@ class FeatureSource {
             let intervalEnd = bpEnd;
             let genomicInterval = new GenomicInterval(queryChr, intervalStart, intervalEnd);
 
-            if (this.featureCache &&
+            if (this.config.disableCache !== true && this.featureCache &&
                 (this.static || this.featureCache.containsRange(genomicInterval) || "all" === chr.toLowerCase())) {
                 return this.featureCache;
             } else {
