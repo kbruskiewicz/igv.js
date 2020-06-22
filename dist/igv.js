@@ -27118,6 +27118,7 @@
 	}
 
 	var NOT_LOADED_MESSAGE = 'Error loading track data';
+	var VISUAL_TRACK_MARGIN = 5;
 
 	var ViewPort = /*#__PURE__*/function () {
 	  function ViewPort(trackView, $container, genomicState, width) {
@@ -27486,18 +27487,11 @@
 
 	      return loadFeatures;
 	    }()
-	    /**
-	     *
-	     * @param tile - the tile is created whenever features are loaded.  It contains the genomic state
-	     * representing the features,as well as the features.  The object evolved, at one time it was an image tile.
-	     * Should be renamed.
-	     */
-
 	  }, {
 	    key: "repaint",
 	    value: function () {
 	      var _repaint = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
-	        var self, tile, isWGV, features, roiFeatures, genomicState, referenceFrame, bpPerPixel, bpStart, bpEnd, pixelWidth, viewportHeight, pixelHeight, canvasTop, devicePixelRatio, drawConfiguration, newCanvas, ctx, pixelXOffset;
+	        var self, tile, isWGV, features, roiFeatures, genomicState, referenceFrame, bpPerPixel, bpStart, bpEnd, pixelWidth, viewportHeight, minHeight, pixelHeight, canvasTop, devicePixelRatio, drawConfiguration, newCanvas, ctx, pixelXOffset;
 	        return regeneratorRuntime.wrap(function _callee2$(_context2) {
 	          while (1) {
 	            switch (_context2.prev = _context2.next) {
@@ -27524,10 +27518,12 @@
 	                pixelWidth = isWGV ? this.$viewport.width() : Math.ceil((bpEnd - bpStart) / bpPerPixel); // For deep tracks we paint a canvas == 3*viewportHeight centered on the current vertical scroll position
 
 	                viewportHeight = this.$viewport.height();
-	                pixelHeight = Math.min(self.getContentHeight(), 3 * viewportHeight);
+	                minHeight = roiFeatures ? Math.max(self.getContentHeight(), viewportHeight) : self.getContentHeight(); // Need to fill viewport for ROIs.
+
+	                pixelHeight = Math.min(minHeight, 3 * viewportHeight);
 
 	                if (!(0 === pixelWidth || 0 === pixelHeight)) {
-	                  _context2.next = 18;
+	                  _context2.next = 19;
 	                  break;
 	                }
 
@@ -27537,7 +27533,7 @@
 
 	                return _context2.abrupt("return");
 
-	              case 18:
+	              case 19:
 	                canvasTop = Math.max(0, -$(this.contentDiv).position().top - viewportHeight); // Always use high DPI if in compressed display mode, otherwise use preference setting;
 
 	                if ("FILL" === this.trackView.track.displayMode) {
@@ -27549,8 +27545,8 @@
 	                drawConfiguration = {
 	                  features: features,
 	                  pixelWidth: pixelWidth,
-	                  pixelHeight: pixelHeight,
-	                  pixelTop: canvasTop,
+	                  pixelHeight: pixelHeight - 2 * VISUAL_TRACK_MARGIN,
+	                  pixelTop: canvasTop + VISUAL_TRACK_MARGIN,
 	                  bpStart: bpStart,
 	                  bpEnd: bpEnd,
 	                  bpPerPixel: bpPerPixel,
@@ -27592,7 +27588,7 @@
 	                self.canvas = newCanvas;
 	                self.ctx = ctx;
 
-	              case 40:
+	              case 41:
 	              case "end":
 	                return _context2.stop();
 	            }
@@ -27615,6 +27611,8 @@
 	      }
 
 	      if (roiFeatures) {
+	        drawConfiguration.pixelHeight += 2 * VISUAL_TRACK_MARGIN;
+	        drawConfiguration.pixelTop -= VISUAL_TRACK_MARGIN;
 	        var _iteratorNormalCompletion2 = true;
 	        var _didIteratorError2 = false;
 	        var _iteratorError2 = undefined;
@@ -27640,13 +27638,7 @@
 	          }
 	        }
 	      }
-	    }
-	    /**
-	     *
-	     * @param tile - the tile is created whenever features are loaded.  It contains the genomic state
-	     * representing the features,as well as the features.  The object evolved, at one time it was an image tile.
-	     * Should be renamed.
-	     */
+	    } // render viewport as SVG
 
 	  }, {
 	    key: "toSVG",
@@ -27689,10 +27681,10 @@
 	                  viewport: this,
 	                  context: ctx,
 	                  top: -$(this.contentDiv).position().top,
-	                  pixelTop: 0,
+	                  pixelTop: VISUAL_TRACK_MARGIN,
 	                  // for compatibility with canvas draw
 	                  pixelWidth: pixelWidth,
-	                  pixelHeight: pixelHeight,
+	                  pixelHeight: pixelHeight - 2 * VISUAL_TRACK_MARGIN,
 	                  bpStart: bpStart,
 	                  bpEnd: bpEnd,
 	                  bpPerPixel: bpPerPixel,
@@ -27809,7 +27801,8 @@
 	                  referenceFrame: referenceFrame,
 	                  genomicState: this.genomicState,
 	                  pixelWidth: width,
-	                  pixelHeight: height,
+	                  pixelTop: VISUAL_TRACK_MARGIN,
+	                  pixelHeight: height - 2 * VISUAL_TRACK_MARGIN,
 	                  viewportWidth: width,
 	                  viewportContainerX: 0,
 	                  viewportContainerWidth: this.browser.viewportContainerWidth(),
@@ -27864,9 +27857,9 @@
 	        viewport: this,
 	        context: context,
 	        top: -$(this.contentDiv).position().top,
-	        pixelTop: 0,
+	        pixelTop: VISUAL_TRACK_MARGIN,
 	        pixelWidth: width,
-	        pixelHeight: height,
+	        pixelHeight: height - 2 * VISUAL_TRACK_MARGIN,
 	        bpStart: start,
 	        bpEnd: start + width * bpPerPixel,
 	        bpPerPixel: bpPerPixel,
@@ -27877,7 +27870,8 @@
 	        viewportContainerX: 0,
 	        viewportContainerWidth: this.browser.viewportContainerWidth()
 	      };
-	      draw.call(this, drawConfiguration, this.tile.features);
+	      var roiFeatures = this.tile ? this.tile.roiFeatures : undefined;
+	      draw.call(this, drawConfiguration, this.tile.features, roiFeatures);
 
 	      if (this.$trackLabel && true === this.browser.trackLabelsVisible) {
 	        renderTrackLabelSVG.call(this, context);
@@ -30238,10 +30232,6 @@
 	    this.$trackManipulationHandle.off();
 	  }
 
-	  if (this.$innerScroll) {
-	    this.$innerScroll.off();
-	  }
-
 	  if (this.scrollbar) {
 	    this.scrollbar.dispose();
 	  }
@@ -30279,8 +30269,7 @@
 	  var lastY;
 	  var namespace = '.trackscrollbar' + guid();
 	  this.namespace = namespace;
-	  var $outerScroll = $('<div class="igv-scrollbar-outer-div">');
-	  this.$outerScroll = $outerScroll;
+	  this.$outerScroll = $('<div class="igv-scrollbar-outer-div">');
 	  this.$innerScroll = $('<div>');
 	  this.$outerScroll.append(this.$innerScroll);
 	  this.$viewportContainer = $viewportContainer;
@@ -30337,6 +30326,7 @@
 
 	TrackScrollbar.prototype.dispose = function () {
 	  $(window).off(this.namespace);
+	  this.$innerScroll.off();
 	};
 
 	TrackScrollbar.prototype.update = function () {
@@ -38784,7 +38774,9 @@
 	  topY += rowHeight * Math.max(7 - bounceHeight, 0) / 10;
 	  var color;
 
-	  if (this.config.colorBy === undefined || this.config.colorBy === 'numUniqueReads') {
+	  if (feature.color) {
+	    color = feature.color; // Explicit setting
+	  } else if (this.config.colorBy === undefined || this.config.colorBy === 'numUniqueReads') {
 	    color = uniquelyMappedReadCount > this.config.colorByNumReadsThreshold ? 'blue' : '#AAAAAA'; // color gradient?
 	  } else if (this.config.colorBy === 'numReads') {
 	    color = totalReadCount > this.config.colorByNumReadsThreshold ? 'blue' : '#AAAAAA';
@@ -40408,8 +40400,7 @@
 	    // nothing to paint.
 
 	    if (self.dataRange.max > self.dataRange.min) {
-	      if (renderFeature.end < bpStart) return;
-	      if (renderFeature.start > bpEnd) return;
+	      var y0 = self.dataRange.min == 0 ? pixelHeight : yScale(0);
 	      var _iteratorNormalCompletion2 = true;
 	      var _didIteratorError2 = false;
 	      var _iteratorError2 = undefined;
@@ -40417,7 +40408,40 @@
 	      try {
 	        for (var _iterator2 = features[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
 	          var f = _step2.value;
-	          renderFeature(f);
+	          if (f.end < bpStart) continue;
+	          if (f.start > bpEnd) break;
+	          var x = getX(f);
+	          if (isNaN(x)) continue;
+	          var y = yScale(f.value);
+	          var width = getWidth(f, x);
+	          var c = f.value < 0 && self.altColor ? self.altColor : self.color;
+	          var color = typeof c === "function" ? c(f.value) : c;
+
+	          if (self.graphType === "points") {
+	            var pointSize = self.config.pointSize || 3;
+	            var px = x + width / 2;
+	            IGVGraphics.fillCircle(ctx, px, y, pointSize / 2, {
+	              "fillStyle": color,
+	              "strokeStyle": color
+	            });
+	          } else {
+	            var height = y - y0;
+
+	            if (Math.abs(height) < 1) {
+	              height = height < 0 ? -1 : 1;
+	            }
+
+	            var pixelEnd = x + width;
+
+	            if (pixelEnd > lastPixelEnd || f.value >= 0 && f.value > lastValue || f.value < 0 && f.value < lastNegValue) {
+	              IGVGraphics.fillRect(ctx, x, y0, width, height, {
+	                fillStyle: color
+	              });
+	            }
+
+	            lastValue = f.value;
+	            lastPixelEnd = pixelEnd;
+	          }
 	        } // If the track includes negative values draw a baseline
 
 	      } catch (err) {
@@ -40445,37 +40469,6 @@
 	  }
 
 	  drawGuideLines(options);
-
-	  function renderFeature(feature) {
-	    if (feature.value < self.dataRange.min) return;
-	    var y = yScale(feature.value);
-	    var x = getX(feature);
-	    if (isNaN(x)) return;
-	    var height = yScale(0) - y;
-	    var width = getWidth(feature, x);
-	    var c = feature.value < 0 && self.altColor ? self.altColor : self.color;
-	    var color = typeof c === "function" ? c(feature.value) : c;
-
-	    if (self.graphType === "points") {
-	      var pointSize = self.config.pointSize || 3;
-	      var px = x + width / 2;
-	      IGVGraphics.fillCircle(ctx, px, y, pointSize / 2, {
-	        "fillStyle": color,
-	        "strokeStyle": color
-	      });
-	    } else {
-	      var pixelEnd = x + width;
-
-	      if (pixelEnd > lastPixelEnd || feature.value >= 0 && feature.value > lastValue || feature.value < 0 && feature.value < lastNegValue) {
-	        IGVGraphics.fillRect(ctx, x, y, width, height, {
-	          fillStyle: color
-	        });
-	      }
-
-	      lastValue = feature.value;
-	      lastPixelEnd = pixelEnd;
-	    }
-	  }
 	};
 
 	WigTrack.prototype.popupData = function (clickState, features) {
@@ -40740,7 +40733,7 @@
 	  this.sampleKeys = []; //   this.featureSource = config.sourceType === "bigquery" ?
 	  //       new igv.BigQueryFeatureSource(this.config) :
 
-	  this.featureSource = new FeatureSource(this.config, browser.genome);
+	  this.featureSource = new FeatureSource(this.config, browser.genome); // TODO this sort doens't look right, no samples have yet been loaded
 
 	  if (config.sort) {
 	    var sort = config.sort;
@@ -40803,6 +40796,7 @@
 	  var self = this;
 	  var v2 = IGVMath.log2(2);
 	  var ctx = options.context;
+	  var pixelTop = options.pixelTop;
 	  var pixelWidth = options.pixelWidth;
 	  var pixelHeight = options.pixelHeight;
 	  IGVGraphics.fillRect(ctx, 0, options.pixelTop, pixelWidth, pixelHeight, {
@@ -40842,6 +40836,8 @@
 	        border = 1;
 	    }
 
+	    var _pixelBottom = options.pixelTop + options.pixelHeight;
+
 	    var _iteratorNormalCompletion = true;
 	    var _didIteratorError = false;
 	    var _iteratorError = undefined;
@@ -40853,21 +40849,17 @@
 	        if (segment.start > bpEnd) break;
 	        var sampleKey = segment.sampleKey || segment.sample;
 	        segment.row = samples[sampleKey];
-	        var y = samples[sampleKey] * sampleHeight + border;
+	        var y = pixelTop + segment.row * sampleHeight + border;
+	        var bottom = y + sampleHeight;
+
+	        if (bottom < pixelTop || y > _pixelBottom) {
+	          continue;
+	        }
+
 	        var value = segment.value;
 
 	        if (!self.isLog) {
 	          value = IGVMath.log2(value / 2);
-	        }
-
-	        var color = void 0;
-
-	        if (value < -0.1) {
-	          color = self.negColorScale.getColor(value);
-	        } else if (value > 0.1) {
-	          color = self.posColorScale.getColor(value);
-	        } else {
-	          color = "white";
 	        }
 
 	        var segmentStart = Math.max(segment.start, bpStart); // const segmentStart = segment.start;
@@ -40878,6 +40870,16 @@
 	        var px1 = Math.round((segmentEnd - bpStart) / xScale);
 	        var pw = Math.max(1, px1 - px); // const sign = px < 0 ? '-' : '+';
 	        // console.log('start ' + sign + numberFormatter(Math.abs(px)) + ' width ' + numberFormatter(pw) + ' end ' + numberFormatter(px + pw));
+
+	        var color = void 0;
+
+	        if (value < -0.1) {
+	          color = self.negColorScale.getColor(value);
+	        } else if (value > 0.1) {
+	          color = self.posColorScale.getColor(value);
+	        } else {
+	          color = "white";
+	        }
 
 	        ctx.fillStyle = color; // Enhance the contrast of sub-pixel displays (FILL mode) by adjusting sample height.
 
@@ -42189,6 +42191,39 @@
 	  }
 	};
 
+	BamAlignment.prototype.gapSizeAt = function (genomicLocation) {
+	  if (this.gaps) {
+	    var _iteratorNormalCompletion2 = true;
+	    var _didIteratorError2 = false;
+	    var _iteratorError2 = undefined;
+
+	    try {
+	      for (var _iterator2 = this.gaps[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	        var gap = _step2.value;
+
+	        if (genomicLocation >= gap.start && genomicLocation < gap.start + gap.len) {
+	          return gap.len;
+	        }
+	      }
+	    } catch (err) {
+	      _didIteratorError2 = true;
+	      _iteratorError2 = err;
+	    } finally {
+	      try {
+	        if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+	          _iterator2.return();
+	        }
+	      } finally {
+	        if (_didIteratorError2) {
+	          throw _iteratorError2;
+	        }
+	      }
+	    }
+	  }
+
+	  return 0;
+	};
+
 	function blockAtGenomicLocation(blocks, genomicLocation) {
 	  for (var i = 0; i < blocks.length; i++) {
 	    var block = blocks[i];
@@ -42913,9 +42948,30 @@
 	              queryChr = header.chrAliasTable.hasOwnProperty(chr) ? header.chrAliasTable[chr] : chr;
 	              qAlignments = this.alignmentCache.queryFeatures(queryChr, bpStart, bpEnd);
 	              alignmentContainer = new AlignmentContainer(chr, bpStart, bpEnd, this.samplingWindowSize, this.samplingDepth, this.pairsSupported);
-	              qAlignments.forEach(function (a) {
-	                alignmentContainer.push(a);
-	              });
+	              var _iteratorNormalCompletion2 = true;
+	              var _didIteratorError2 = false;
+	              var _iteratorError2 = undefined;
+
+	              try {
+	                for (var _iterator2 = qAlignments[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                  var _a = _step2.value;
+	                  alignmentContainer.push(_a);
+	                }
+	              } catch (err) {
+	                _didIteratorError2 = true;
+	                _iteratorError2 = err;
+	              } finally {
+	                try {
+	                  if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+	                    _iterator2.return();
+	                  }
+	                } finally {
+	                  if (_didIteratorError2) {
+	                    throw _iteratorError2;
+	                  }
+	                }
+	              }
+
 	              alignmentContainer.finish();
 	              return alignmentContainer;
 	            };
@@ -56614,6 +56670,9 @@
 	    case "INSERT_SIZE":
 	      return -Math.abs(alignment.fragmentLength);
 
+	    case "GAP_SIZE":
+	      return -alignment.gapSizeAt(genomicLocation);
+
 	    case "MATE_CHR":
 	      mate = alignment.mate;
 
@@ -57138,9 +57197,10 @@
 	  this.alignmentTrack = new AlignmentTrack(config, this);
 	  this.visibilityWindow = config.visibilityWindow || 30000;
 	  this.viewAsPairs = config.viewAsPairs;
-	  this.pairsSupported = undefined === config.pairsSupported;
+	  this.pairsSupported = config.pairsSupported !== false;
 	  this.showSoftClips = config.showSoftClips;
 	  this.showAllBases = config.showAllBases;
+	  this.showMismatches = config.showMismatches !== false;
 	  this.color = config.color || DEFAULT_ALIGNMENT_COLOR;
 	  this.coverageColor = config.coverageColor || DEFAULT_COVERAGE_COLOR;
 	  this.minFragmentLength = config.minFragmentLength; // Optional, might be undefined
@@ -57555,7 +57615,6 @@
 	var CoverageTrack = function CoverageTrack(config, parent) {
 	  this.parent = parent;
 	  this.featureSource = parent.featureSource;
-	  this.top = 0;
 	  this.height = config.coverageTrackHeight;
 	  this.dataRange = {
 	    min: 0
@@ -57569,14 +57628,14 @@
 	};
 
 	CoverageTrack.prototype.draw = function (options) {
-	  var ctx = options.context;
+	  var pixelTop = options.pixelTop;
+	  var pixelBottom = pixelTop + options.pixelHeight;
 
-	  if (this.top) {
-	    ctx.translate(0, top);
+	  if (pixelTop > this.height) {
+	    return; //scrolled out of view
 	  }
 
-	  var yTop = options.top || 0;
-	  var yBottom = yTop + options.pixelHeight;
+	  var ctx = options.context;
 	  var alignmentContainer = options.features;
 	  var coverageMap = alignmentContainer.coverageMap;
 	  this.dataRange.max = coverageMap.maximum;
@@ -57775,8 +57834,6 @@
 	  var packedAlignmentRows = alignmentContainer.packedAlignmentRows;
 	  var showSoftClips = this.parent.showSoftClips;
 	  var showAllBases = this.parent.showAllBases;
-	  var yTop = options.top || 0;
-	  var yBottom = yTop + options.pixelHeight;
 	  var referenceSequence = alignmentContainer.sequence;
 
 	  if (referenceSequence) {
@@ -57784,8 +57841,14 @@
 	  }
 
 	  var alignmentRowYInset = 0;
+	  var pixelTop = options.pixelTop;
 	  ctx.save();
-	  if (this.top) ctx.translate(0, this.top);
+
+	  if (this.top) {
+	    ctx.translate(0, this.top);
+	  }
+
+	  var pixelBottom = pixelTop + options.pixelHeight;
 
 	  if (alignmentContainer.hasDownsampledIntervals()) {
 	    alignmentRowYInset = downsampleRowHeight + alignmentStartGap;
@@ -57816,6 +57879,13 @@
 	      var alignmentRow = packedAlignmentRows[rowIndex];
 	      var alignmentY = alignmentRowYInset + this.alignmentRowHeight * rowIndex;
 	      var alignmentHeight = this.alignmentRowHeight <= 4 ? this.alignmentRowHeight : this.alignmentRowHeight - 2;
+
+	      if (alignmentY > pixelBottom) {
+	        break;
+	      } else if (alignmentY + alignmentHeight < pixelTop) {
+	        continue;
+	      }
+
 	      var _iteratorNormalCompletion4 = true;
 	      var _didIteratorError4 = false;
 	      var _iteratorError4 = undefined;
@@ -58048,7 +58118,7 @@
 	        } // Mismatch coloring
 
 
-	      if (isSoftClip || showAllBases || referenceSequence && alignment.seq && alignment.seq !== "*") {
+	      if (this.showMismatches && (isSoftClip || showAllBases || referenceSequence && alignment.seq && alignment.seq !== "*")) {
 	        var seq = alignment.seq ? alignment.seq.toUpperCase() : undefined;
 	        var qual = alignment.qual;
 	        var seqOffset = block.seqOffset;
@@ -58175,6 +58245,12 @@
 	    label: '&nbsp; insert size',
 	    click: function click() {
 	      return sortByOption("INSERT_SIZE");
+	    }
+	  });
+	  list.push({
+	    label: '&nbsp; gap size',
+	    click: function click() {
+	      return sortByOption("GAP_SIZE");
 	    }
 	  });
 	  list.push({
@@ -60886,7 +60962,7 @@
 	    }
 
 	    coord = coordinates(region, drawConfiguration.bpStart, drawConfiguration.bpPerPixel);
-	    IGVGraphics.fillRect(drawConfiguration.context, coord.x, 0, coord.width, drawConfiguration.pixelHeight, {
+	    IGVGraphics.fillRect(drawConfiguration.context, coord.x, drawConfiguration.pixelTop, coord.width, drawConfiguration.pixelHeight, {
 	      fillStyle: this.color
 	    });
 	  }
@@ -61868,7 +61944,8 @@
 	  }
 
 	  return false;
-	};
+	}; // Render browser display as SVG
+
 
 	Browser.prototype.toSVG = function () {
 	  var trackContainerBBox = this.trackContainerDiv.getBoundingClientRect();
@@ -61936,7 +62013,7 @@
 	  return svgContext.getSerializedSvg(true);
 	};
 
-	Browser.prototype.renderSVG = function (config) {
+	Browser.prototype.saveSVGtoFile = function (config) {
 	  var svg = this.toSVG();
 
 	  if (config.$container) {
@@ -61965,7 +62042,7 @@
 
 	Browser.prototype.loadSession = /*#__PURE__*/function () {
 	  var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(options) {
-	    var self, session, loadSessionFile, _loadSessionFile;
+	    var session, loadSessionFile, _loadSessionFile;
 
 	    return regeneratorRuntime.wrap(function _callee2$(_context2) {
 	      while (1) {
@@ -62037,7 +62114,7 @@
 	              return _loadSessionFile.apply(this, arguments);
 	            };
 
-	            self = this;
+	            this.roi = [];
 
 	            if (!(options.url || options.file)) {
 	              _context2.next = 9;
@@ -62056,7 +62133,7 @@
 	            session = options;
 
 	          case 10:
-	            return _context2.abrupt("return", self.loadSessionObject(session));
+	            return _context2.abrupt("return", this.loadSessionObject(session));
 
 	          case 11:
 	          case "end":
@@ -62718,6 +62795,33 @@
 	    }
 	  }
 	};
+
+	Browser.prototype.clearROIs = function () {
+	  this.roi = [];
+	  var _iteratorNormalCompletion10 = true;
+	  var _didIteratorError10 = false;
+	  var _iteratorError10 = undefined;
+
+	  try {
+	    for (var _iterator10 = this.trackViews[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
+	      var tv = _step10.value;
+	      tv.updateViews(true);
+	    }
+	  } catch (err) {
+	    _didIteratorError10 = true;
+	    _iteratorError10 = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion10 && _iterator10.return != null) {
+	        _iterator10.return();
+	      }
+	    } finally {
+	      if (_didIteratorError10) {
+	        throw _iteratorError10;
+	      }
+	    }
+	  }
+	};
 	/**
 	 * Return a promise to load a track
 	 *
@@ -62907,26 +63011,26 @@
 
 	  if (config.roi && track) {
 	    track.roi = [];
-	    var _iteratorNormalCompletion10 = true;
-	    var _didIteratorError10 = false;
-	    var _iteratorError10 = undefined;
+	    var _iteratorNormalCompletion11 = true;
+	    var _didIteratorError11 = false;
+	    var _iteratorError11 = undefined;
 
 	    try {
-	      for (var _iterator10 = config.roi[Symbol.iterator](), _step10; !(_iteratorNormalCompletion10 = (_step10 = _iterator10.next()).done); _iteratorNormalCompletion10 = true) {
-	        var r = _step10.value;
+	      for (var _iterator11 = config.roi[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
+	        var r = _step11.value;
 	        track.roi.push(new ROI(r, this.genome));
 	      }
 	    } catch (err) {
-	      _didIteratorError10 = true;
-	      _iteratorError10 = err;
+	      _didIteratorError11 = true;
+	      _iteratorError11 = err;
 	    } finally {
 	      try {
-	        if (!_iteratorNormalCompletion10 && _iterator10.return != null) {
-	          _iterator10.return();
+	        if (!_iteratorNormalCompletion11 && _iterator11.return != null) {
+	          _iterator11.return();
 	        }
 	      } finally {
-	        if (_didIteratorError10) {
-	          throw _iteratorError10;
+	        if (_didIteratorError11) {
+	          throw _iteratorError11;
 	        }
 	      }
 	    }
@@ -62998,29 +63102,29 @@
 
 	Browser.prototype.removeTrackByName = function (name) {
 	  var copy = this.trackViews.slice();
-	  var _iteratorNormalCompletion11 = true;
-	  var _didIteratorError11 = false;
-	  var _iteratorError11 = undefined;
+	  var _iteratorNormalCompletion12 = true;
+	  var _didIteratorError12 = false;
+	  var _iteratorError12 = undefined;
 
 	  try {
-	    for (var _iterator11 = copy[Symbol.iterator](), _step11; !(_iteratorNormalCompletion11 = (_step11 = _iterator11.next()).done); _iteratorNormalCompletion11 = true) {
-	      var trackView = _step11.value;
+	    for (var _iterator12 = copy[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
+	      var trackView = _step12.value;
 
 	      if (name === trackView.track.name) {
 	        this.removeTrack(trackView.track);
 	      }
 	    }
 	  } catch (err) {
-	    _didIteratorError11 = true;
-	    _iteratorError11 = err;
+	    _didIteratorError12 = true;
+	    _iteratorError12 = err;
 	  } finally {
 	    try {
-	      if (!_iteratorNormalCompletion11 && _iterator11.return != null) {
-	        _iterator11.return();
+	      if (!_iteratorNormalCompletion12 && _iterator12.return != null) {
+	        _iterator12.return();
 	      }
 	    } finally {
-	      if (_didIteratorError11) {
-	        throw _iteratorError11;
+	      if (_didIteratorError12) {
+	        throw _iteratorError12;
 	      }
 	    }
 	  }
@@ -63052,13 +63156,13 @@
 	Browser.prototype.removeAllTracks = function (removeSequence) {
 	  var self = this,
 	      newTrackViews = [];
-	  var _iteratorNormalCompletion12 = true;
-	  var _didIteratorError12 = false;
-	  var _iteratorError12 = undefined;
+	  var _iteratorNormalCompletion13 = true;
+	  var _didIteratorError13 = false;
+	  var _iteratorError13 = undefined;
 
 	  try {
-	    for (var _iterator12 = this.trackViews[Symbol.iterator](), _step12; !(_iteratorNormalCompletion12 = (_step12 = _iterator12.next()).done); _iteratorNormalCompletion12 = true) {
-	      var tv = _step12.value;
+	    for (var _iterator13 = this.trackViews[Symbol.iterator](), _step13; !(_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done); _iteratorNormalCompletion13 = true) {
+	      var tv = _step13.value;
 
 	      if ((removeSequence || tv.track.id !== 'sequence') && tv.track.id !== 'ruler') {
 	        self.trackContainerDiv.removeChild(tv.trackDiv);
@@ -63069,16 +63173,16 @@
 	      }
 	    }
 	  } catch (err) {
-	    _didIteratorError12 = true;
-	    _iteratorError12 = err;
+	    _didIteratorError13 = true;
+	    _iteratorError13 = err;
 	  } finally {
 	    try {
-	      if (!_iteratorNormalCompletion12 && _iterator12.return != null) {
-	        _iterator12.return();
+	      if (!_iteratorNormalCompletion13 && _iterator13.return != null) {
+	        _iterator13.return();
 	      }
 	    } finally {
-	      if (_didIteratorError12) {
-	        throw _iteratorError12;
+	      if (_didIteratorError13) {
+	        throw _iteratorError13;
 	      }
 	    }
 	  }
@@ -63186,7 +63290,7 @@
 
 	Browser.prototype.updateViews = /*#__PURE__*/function () {
 	  var _ref15 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee11(genomicState, views, force) {
-	    var self, groupAutoscaleTracks, otherTracks, _iteratorNormalCompletion13, _didIteratorError13, _iteratorError13, _iterator13, _step13, trackView, keys, _i, _keys, group, groupTrackViews, promises, featureArray, allFeatures, dataRange, _iteratorNormalCompletion15, _didIteratorError15, _iteratorError15, _iterator15, _step15, features, _iteratorNormalCompletion16, _didIteratorError16, _iteratorError16, _iterator16, _step16, _trackView, _iteratorNormalCompletion14, _didIteratorError14, _iteratorError14, _iterator14, _step14, _trackView2;
+	    var self, groupAutoscaleTracks, otherTracks, _iteratorNormalCompletion14, _didIteratorError14, _iteratorError14, _iterator14, _step14, trackView, keys, _i, _keys, group, groupTrackViews, promises, featureArray, allFeatures, dataRange, _iteratorNormalCompletion16, _didIteratorError16, _iteratorError16, _iterator16, _step16, features, _iteratorNormalCompletion17, _didIteratorError17, _iteratorError17, _iterator17, _step17, _trackView, _iteratorNormalCompletion15, _didIteratorError15, _iteratorError15, _iterator15, _step15, _trackView2;
 
 	    return regeneratorRuntime.wrap(function _callee11$(_context11) {
 	      while (1) {
@@ -63221,24 +63325,24 @@
 	              break;
 	            }
 
-	            _iteratorNormalCompletion13 = true;
-	            _didIteratorError13 = false;
-	            _iteratorError13 = undefined;
+	            _iteratorNormalCompletion14 = true;
+	            _didIteratorError14 = false;
+	            _iteratorError14 = undefined;
 	            _context11.prev = 10;
-	            _iterator13 = views[Symbol.iterator]();
+	            _iterator14 = views[Symbol.iterator]();
 
 	          case 12:
-	            if (_iteratorNormalCompletion13 = (_step13 = _iterator13.next()).done) {
+	            if (_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done) {
 	              _context11.next = 19;
 	              break;
 	            }
 
-	            trackView = _step13.value;
+	            trackView = _step14.value;
 	            _context11.next = 16;
 	            return trackView.updateViews();
 
 	          case 16:
-	            _iteratorNormalCompletion13 = true;
+	            _iteratorNormalCompletion14 = true;
 	            _context11.next = 12;
 	            break;
 
@@ -63249,26 +63353,26 @@
 	          case 21:
 	            _context11.prev = 21;
 	            _context11.t0 = _context11["catch"](10);
-	            _didIteratorError13 = true;
-	            _iteratorError13 = _context11.t0;
+	            _didIteratorError14 = true;
+	            _iteratorError14 = _context11.t0;
 
 	          case 25:
 	            _context11.prev = 25;
 	            _context11.prev = 26;
 
-	            if (!_iteratorNormalCompletion13 && _iterator13.return != null) {
-	              _iterator13.return();
+	            if (!_iteratorNormalCompletion14 && _iterator14.return != null) {
+	              _iterator14.return();
 	            }
 
 	          case 28:
 	            _context11.prev = 28;
 
-	            if (!_didIteratorError13) {
+	            if (!_didIteratorError14) {
 	              _context11.next = 31;
 	              break;
 	            }
 
-	            throw _iteratorError13;
+	            throw _iteratorError14;
 
 	          case 31:
 	            return _context11.finish(28);
@@ -63321,13 +63425,13 @@
 	          case 47:
 	            featureArray = _context11.sent;
 	            allFeatures = [];
-	            _iteratorNormalCompletion15 = true;
-	            _didIteratorError15 = false;
-	            _iteratorError15 = undefined;
+	            _iteratorNormalCompletion16 = true;
+	            _didIteratorError16 = false;
+	            _iteratorError16 = undefined;
 	            _context11.prev = 52;
 
-	            for (_iterator15 = featureArray[Symbol.iterator](); !(_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done); _iteratorNormalCompletion15 = true) {
-	              features = _step15.value;
+	            for (_iterator16 = featureArray[Symbol.iterator](); !(_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done); _iteratorNormalCompletion16 = true) {
+	              features = _step16.value;
 	              allFeatures = allFeatures.concat(features);
 	            }
 
@@ -63337,26 +63441,26 @@
 	          case 56:
 	            _context11.prev = 56;
 	            _context11.t1 = _context11["catch"](52);
-	            _didIteratorError15 = true;
-	            _iteratorError15 = _context11.t1;
+	            _didIteratorError16 = true;
+	            _iteratorError16 = _context11.t1;
 
 	          case 60:
 	            _context11.prev = 60;
 	            _context11.prev = 61;
 
-	            if (!_iteratorNormalCompletion15 && _iterator15.return != null) {
-	              _iterator15.return();
+	            if (!_iteratorNormalCompletion16 && _iterator16.return != null) {
+	              _iterator16.return();
 	            }
 
 	          case 63:
 	            _context11.prev = 63;
 
-	            if (!_didIteratorError15) {
+	            if (!_didIteratorError16) {
 	              _context11.next = 66;
 	              break;
 	            }
 
-	            throw _iteratorError15;
+	            throw _iteratorError16;
 
 	          case 66:
 	            return _context11.finish(63);
@@ -63366,26 +63470,26 @@
 
 	          case 68:
 	            dataRange = doAutoscale(allFeatures);
-	            _iteratorNormalCompletion16 = true;
-	            _didIteratorError16 = false;
-	            _iteratorError16 = undefined;
+	            _iteratorNormalCompletion17 = true;
+	            _didIteratorError17 = false;
+	            _iteratorError17 = undefined;
 	            _context11.prev = 72;
-	            _iterator16 = groupTrackViews[Symbol.iterator]();
+	            _iterator17 = groupTrackViews[Symbol.iterator]();
 
 	          case 74:
-	            if (_iteratorNormalCompletion16 = (_step16 = _iterator16.next()).done) {
+	            if (_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done) {
 	              _context11.next = 83;
 	              break;
 	            }
 
-	            _trackView = _step16.value;
+	            _trackView = _step17.value;
 	            _trackView.track.dataRange = dataRange;
 	            _trackView.track.autoscale = false;
 	            _context11.next = 80;
 	            return _trackView.updateViews();
 
 	          case 80:
-	            _iteratorNormalCompletion16 = true;
+	            _iteratorNormalCompletion17 = true;
 	            _context11.next = 74;
 	            break;
 
@@ -63396,26 +63500,26 @@
 	          case 85:
 	            _context11.prev = 85;
 	            _context11.t2 = _context11["catch"](72);
-	            _didIteratorError16 = true;
-	            _iteratorError16 = _context11.t2;
+	            _didIteratorError17 = true;
+	            _iteratorError17 = _context11.t2;
 
 	          case 89:
 	            _context11.prev = 89;
 	            _context11.prev = 90;
 
-	            if (!_iteratorNormalCompletion16 && _iterator16.return != null) {
-	              _iterator16.return();
+	            if (!_iteratorNormalCompletion17 && _iterator17.return != null) {
+	              _iterator17.return();
 	            }
 
 	          case 92:
 	            _context11.prev = 92;
 
-	            if (!_didIteratorError16) {
+	            if (!_didIteratorError17) {
 	              _context11.next = 95;
 	              break;
 	            }
 
-	            throw _iteratorError16;
+	            throw _iteratorError17;
 
 	          case 95:
 	            return _context11.finish(92);
@@ -63429,24 +63533,24 @@
 	            break;
 
 	          case 100:
-	            _iteratorNormalCompletion14 = true;
-	            _didIteratorError14 = false;
-	            _iteratorError14 = undefined;
+	            _iteratorNormalCompletion15 = true;
+	            _didIteratorError15 = false;
+	            _iteratorError15 = undefined;
 	            _context11.prev = 103;
-	            _iterator14 = otherTracks[Symbol.iterator]();
+	            _iterator15 = otherTracks[Symbol.iterator]();
 
 	          case 105:
-	            if (_iteratorNormalCompletion14 = (_step14 = _iterator14.next()).done) {
+	            if (_iteratorNormalCompletion15 = (_step15 = _iterator15.next()).done) {
 	              _context11.next = 112;
 	              break;
 	            }
 
-	            _trackView2 = _step14.value;
+	            _trackView2 = _step15.value;
 	            _context11.next = 109;
 	            return _trackView2.updateViews(force);
 
 	          case 109:
-	            _iteratorNormalCompletion14 = true;
+	            _iteratorNormalCompletion15 = true;
 	            _context11.next = 105;
 	            break;
 
@@ -63457,26 +63561,26 @@
 	          case 114:
 	            _context11.prev = 114;
 	            _context11.t3 = _context11["catch"](103);
-	            _didIteratorError14 = true;
-	            _iteratorError14 = _context11.t3;
+	            _didIteratorError15 = true;
+	            _iteratorError15 = _context11.t3;
 
 	          case 118:
 	            _context11.prev = 118;
 	            _context11.prev = 119;
 
-	            if (!_iteratorNormalCompletion14 && _iterator14.return != null) {
-	              _iterator14.return();
+	            if (!_iteratorNormalCompletion15 && _iterator15.return != null) {
+	              _iterator15.return();
 	            }
 
 	          case 121:
 	            _context11.prev = 121;
 
-	            if (!_didIteratorError14) {
+	            if (!_didIteratorError15) {
 	              _context11.next = 124;
 	              break;
 	            }
 
-	            throw _iteratorError14;
+	            throw _iteratorError15;
 
 	          case 124:
 	            return _context11.finish(121);
@@ -63624,13 +63728,13 @@
 	  }
 
 	  var viewports = this.trackViews[0].viewports;
-	  var _iteratorNormalCompletion17 = true;
-	  var _didIteratorError17 = false;
-	  var _iteratorError17 = undefined;
+	  var _iteratorNormalCompletion18 = true;
+	  var _didIteratorError18 = false;
+	  var _iteratorError18 = undefined;
 
 	  try {
-	    for (var _iterator17 = viewports[Symbol.iterator](), _step17; !(_iteratorNormalCompletion17 = (_step17 = _iterator17.next()).done); _iteratorNormalCompletion17 = true) {
-	      var viewport = _step17.value;
+	    for (var _iterator18 = viewports[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
+	      var viewport = _step18.value;
 	      var referenceFrame = viewport.genomicState.referenceFrame;
 	      var centerBP = referenceFrame.start + referenceFrame.toBP(viewport.$viewport.width() / 2.0);
 	      var chromosome = referenceFrame.getChromosome();
@@ -63646,16 +63750,16 @@
 	      }
 	    }
 	  } catch (err) {
-	    _didIteratorError17 = true;
-	    _iteratorError17 = err;
+	    _didIteratorError18 = true;
+	    _iteratorError18 = err;
 	  } finally {
 	    try {
-	      if (!_iteratorNormalCompletion17 && _iterator17.return != null) {
-	        _iterator17.return();
+	      if (!_iteratorNormalCompletion18 && _iterator18.return != null) {
+	        _iterator18.return();
 	      }
 	    } finally {
-	      if (_didIteratorError17) {
-	        throw _iteratorError17;
+	      if (_didIteratorError18) {
+	        throw _iteratorError18;
 	      }
 	    }
 	  }
@@ -63663,13 +63767,13 @@
 
 	Browser.prototype.zoomWithScaleFactor = function (scaleFactor, centerBPOrUndefined, viewportOrUndefined) {
 	  var viewports = viewportOrUndefined ? [viewportOrUndefined] : this.trackViews[0].viewports;
-	  var _iteratorNormalCompletion18 = true;
-	  var _didIteratorError18 = false;
-	  var _iteratorError18 = undefined;
+	  var _iteratorNormalCompletion19 = true;
+	  var _didIteratorError19 = false;
+	  var _iteratorError19 = undefined;
 
 	  try {
-	    for (var _iterator18 = viewports[Symbol.iterator](), _step18; !(_iteratorNormalCompletion18 = (_step18 = _iterator18.next()).done); _iteratorNormalCompletion18 = true) {
-	      var viewport = _step18.value;
+	    for (var _iterator19 = viewports[Symbol.iterator](), _step19; !(_iteratorNormalCompletion19 = (_step19 = _iterator19.next()).done); _iteratorNormalCompletion19 = true) {
+	      var viewport = _step19.value;
 	      var referenceFrame = viewport.genomicState.referenceFrame;
 	      var chromosome = referenceFrame.getChromosome();
 	      var start = referenceFrame.start;
@@ -63696,16 +63800,16 @@
 	      }
 	    }
 	  } catch (err) {
-	    _didIteratorError18 = true;
-	    _iteratorError18 = err;
+	    _didIteratorError19 = true;
+	    _iteratorError19 = err;
 	  } finally {
 	    try {
-	      if (!_iteratorNormalCompletion18 && _iterator18.return != null) {
-	        _iterator18.return();
+	      if (!_iteratorNormalCompletion19 && _iterator19.return != null) {
+	        _iterator19.return();
 	      }
 	    } finally {
-	      if (_didIteratorError18) {
-	        throw _iteratorError18;
+	      if (_didIteratorError19) {
+	        throw _iteratorError19;
 	      }
 	    }
 	  }
@@ -63824,25 +63928,27 @@
 	};
 
 	Browser.prototype.emptyViewportContainers = function () {
-	  var _iteratorNormalCompletion19 = true;
-	  var _didIteratorError19 = false;
-	  var _iteratorError19 = undefined;
+	  var _iteratorNormalCompletion20 = true;
+	  var _didIteratorError20 = false;
+	  var _iteratorError20 = undefined;
 
 	  try {
-	    for (var _iterator19 = this.trackViews[Symbol.iterator](), _step19; !(_iteratorNormalCompletion19 = (_step19 = _iterator19.next()).done); _iteratorNormalCompletion19 = true) {
-	      var trackView = _step19.value;
+	    for (var _iterator20 = this.trackViews[Symbol.iterator](), _step20; !(_iteratorNormalCompletion20 = (_step20 = _iterator20.next()).done); _iteratorNormalCompletion20 = true) {
+	      var trackView = _step20.value;
 
-	      if (trackView.$outerScroll) {
-	        trackView.$outerScroll.remove();
+	      if (trackView.scrollbar) {
+	        trackView.scrollbar.$outerScroll.remove();
+	        trackView.scrollbar = null;
+	        trackView.scrollbar = undefined;
 	      }
 
-	      var _iteratorNormalCompletion20 = true;
-	      var _didIteratorError20 = false;
-	      var _iteratorError20 = undefined;
+	      var _iteratorNormalCompletion21 = true;
+	      var _didIteratorError21 = false;
+	      var _iteratorError21 = undefined;
 
 	      try {
-	        for (var _iterator20 = trackView.viewports[Symbol.iterator](), _step20; !(_iteratorNormalCompletion20 = (_step20 = _iterator20.next()).done); _iteratorNormalCompletion20 = true) {
-	          var viewport = _step20.value;
+	        for (var _iterator21 = trackView.viewports[Symbol.iterator](), _step21; !(_iteratorNormalCompletion21 = (_step21 = _iterator21.next()).done); _iteratorNormalCompletion21 = true) {
+	          var viewport = _step21.value;
 
 	          if (viewport.rulerSweeper) {
 	            viewport.rulerSweeper.$rulerSweeper.remove();
@@ -63857,16 +63963,16 @@
 	          viewport.$viewport.remove();
 	        }
 	      } catch (err) {
-	        _didIteratorError20 = true;
-	        _iteratorError20 = err;
+	        _didIteratorError21 = true;
+	        _iteratorError21 = err;
 	      } finally {
 	        try {
-	          if (!_iteratorNormalCompletion20 && _iterator20.return != null) {
-	            _iterator20.return();
+	          if (!_iteratorNormalCompletion21 && _iterator21.return != null) {
+	            _iterator21.return();
 	          }
 	        } finally {
-	          if (_didIteratorError20) {
-	            throw _iteratorError20;
+	          if (_didIteratorError21) {
+	            throw _iteratorError21;
 	          }
 	        }
 	      }
@@ -63876,16 +63982,16 @@
 	      delete trackView.scrollbar;
 	    }
 	  } catch (err) {
-	    _didIteratorError19 = true;
-	    _iteratorError19 = err;
+	    _didIteratorError20 = true;
+	    _iteratorError20 = err;
 	  } finally {
 	    try {
-	      if (!_iteratorNormalCompletion19 && _iterator19.return != null) {
-	        _iterator19.return();
+	      if (!_iteratorNormalCompletion20 && _iterator20.return != null) {
+	        _iterator20.return();
 	      }
 	    } finally {
-	      if (_didIteratorError19) {
-	        throw _iteratorError19;
+	      if (_didIteratorError20) {
+	        throw _iteratorError20;
 	      }
 	    }
 	  }
@@ -63909,51 +64015,51 @@
 
 	Browser.prototype.getViewportWithGUID = function (guid) {
 	  var result = undefined;
-	  var _iteratorNormalCompletion21 = true;
-	  var _didIteratorError21 = false;
-	  var _iteratorError21 = undefined;
+	  var _iteratorNormalCompletion22 = true;
+	  var _didIteratorError22 = false;
+	  var _iteratorError22 = undefined;
 
 	  try {
-	    for (var _iterator21 = this.trackViews[Symbol.iterator](), _step21; !(_iteratorNormalCompletion21 = (_step21 = _iterator21.next()).done); _iteratorNormalCompletion21 = true) {
-	      var trackView = _step21.value;
-	      var _iteratorNormalCompletion22 = true;
-	      var _didIteratorError22 = false;
-	      var _iteratorError22 = undefined;
+	    for (var _iterator22 = this.trackViews[Symbol.iterator](), _step22; !(_iteratorNormalCompletion22 = (_step22 = _iterator22.next()).done); _iteratorNormalCompletion22 = true) {
+	      var trackView = _step22.value;
+	      var _iteratorNormalCompletion23 = true;
+	      var _didIteratorError23 = false;
+	      var _iteratorError23 = undefined;
 
 	      try {
-	        for (var _iterator22 = trackView.viewports[Symbol.iterator](), _step22; !(_iteratorNormalCompletion22 = (_step22 = _iterator22.next()).done); _iteratorNormalCompletion22 = true) {
-	          var viewport = _step22.value;
+	        for (var _iterator23 = trackView.viewports[Symbol.iterator](), _step23; !(_iteratorNormalCompletion23 = (_step23 = _iterator23.next()).done); _iteratorNormalCompletion23 = true) {
+	          var viewport = _step23.value;
 
 	          if (guid === viewport.guid) {
 	            result = viewport;
 	          }
 	        }
 	      } catch (err) {
-	        _didIteratorError22 = true;
-	        _iteratorError22 = err;
+	        _didIteratorError23 = true;
+	        _iteratorError23 = err;
 	      } finally {
 	        try {
-	          if (!_iteratorNormalCompletion22 && _iterator22.return != null) {
-	            _iterator22.return();
+	          if (!_iteratorNormalCompletion23 && _iterator23.return != null) {
+	            _iterator23.return();
 	          }
 	        } finally {
-	          if (_didIteratorError22) {
-	            throw _iteratorError22;
+	          if (_didIteratorError23) {
+	            throw _iteratorError23;
 	          }
 	        }
 	      }
 	    }
 	  } catch (err) {
-	    _didIteratorError21 = true;
-	    _iteratorError21 = err;
+	    _didIteratorError22 = true;
+	    _iteratorError22 = err;
 	  } finally {
 	    try {
-	      if (!_iteratorNormalCompletion21 && _iterator21.return != null) {
-	        _iterator21.return();
+	      if (!_iteratorNormalCompletion22 && _iterator22.return != null) {
+	        _iterator22.return();
 	      }
 	    } finally {
-	      if (_didIteratorError21) {
-	        throw _iteratorError21;
+	      if (_didIteratorError22) {
+	        throw _iteratorError22;
 	      }
 	    }
 	  }
@@ -63967,7 +64073,7 @@
 
 	Browser.prototype.search = /*#__PURE__*/function () {
 	  var _ref16 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee14(string, init) {
-	    var self, genome, loci, genomicStateList, _iteratorNormalCompletion23, _didIteratorError23, _iteratorError23, _iterator23, _step23, gs, panelWidth, createGenomicStateList, _createGenomicStateList;
+	    var self, genome, loci, genomicStateList, _iteratorNormalCompletion24, _didIteratorError24, _iteratorError24, _iterator24, _step24, gs, panelWidth, createGenomicStateList, _createGenomicStateList;
 
 	    return regeneratorRuntime.wrap(function _callee14$(_context14) {
 	      while (1) {
@@ -63975,7 +64081,7 @@
 	          case 0:
 	            _createGenomicStateList = function _ref23() {
 	              _createGenomicStateList = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee13(loci) {
-	                var searchConfig, result, _iteratorNormalCompletion24, _didIteratorError24, _iteratorError24, _iterator24, _step24, locus, genomicState, feature, chromosome, response, _genomicState, appendReferenceFrames, searchWebService, _searchWebService, processSearchResult, isLocusChrNameStartEnd;
+	                var searchConfig, result, _iteratorNormalCompletion25, _didIteratorError25, _iteratorError25, _iterator25, _step25, locus, genomicState, feature, chromosome, response, _genomicState, appendReferenceFrames, searchWebService, _searchWebService, processSearchResult, isLocusChrNameStartEnd;
 
 	                return regeneratorRuntime.wrap(function _callee13$(_context13) {
 	                  while (1) {
@@ -64170,19 +64276,19 @@
 	                        searchConfig = self.searchConfig;
 	                        result = []; // Try locus string first  (e.g.  chr1:100-200)
 
-	                        _iteratorNormalCompletion24 = true;
-	                        _didIteratorError24 = false;
-	                        _iteratorError24 = undefined;
+	                        _iteratorNormalCompletion25 = true;
+	                        _didIteratorError25 = false;
+	                        _iteratorError25 = undefined;
 	                        _context13.prev = 10;
-	                        _iterator24 = loci[Symbol.iterator]();
+	                        _iterator25 = loci[Symbol.iterator]();
 
 	                      case 12:
-	                        if (_iteratorNormalCompletion24 = (_step24 = _iterator24.next()).done) {
+	                        if (_iteratorNormalCompletion25 = (_step25 = _iterator25.next()).done) {
 	                          _context13.next = 35;
 	                          break;
 	                        }
 
-	                        locus = _step24.value;
+	                        locus = _step25.value;
 	                        genomicState = isLocusChrNameStartEnd(locus, self.genome);
 
 	                        if (!genomicState) {
@@ -64236,7 +64342,7 @@
 	                        appendReferenceFrames(result);
 
 	                      case 32:
-	                        _iteratorNormalCompletion24 = true;
+	                        _iteratorNormalCompletion25 = true;
 	                        _context13.next = 12;
 	                        break;
 
@@ -64247,26 +64353,26 @@
 	                      case 37:
 	                        _context13.prev = 37;
 	                        _context13.t0 = _context13["catch"](10);
-	                        _didIteratorError24 = true;
-	                        _iteratorError24 = _context13.t0;
+	                        _didIteratorError25 = true;
+	                        _iteratorError25 = _context13.t0;
 
 	                      case 41:
 	                        _context13.prev = 41;
 	                        _context13.prev = 42;
 
-	                        if (!_iteratorNormalCompletion24 && _iterator24.return != null) {
-	                          _iterator24.return();
+	                        if (!_iteratorNormalCompletion25 && _iterator25.return != null) {
+	                          _iterator25.return();
 	                        }
 
 	                      case 44:
 	                        _context13.prev = 44;
 
-	                        if (!_didIteratorError24) {
+	                        if (!_didIteratorError25) {
 	                          _context13.next = 47;
 	                          break;
 	                        }
 
-	                        throw _iteratorError24;
+	                        throw _iteratorError25;
 
 	                      case 47:
 	                        return _context13.finish(44);
@@ -64326,13 +64432,13 @@
 	            this.genomicStateList = genomicStateList;
 	            this.buildViewportsWithGenomicStateList(genomicStateList); // assign ids to the state objects
 
-	            _iteratorNormalCompletion23 = true;
-	            _didIteratorError23 = false;
-	            _iteratorError23 = undefined;
+	            _iteratorNormalCompletion24 = true;
+	            _didIteratorError24 = false;
+	            _iteratorError24 = undefined;
 	            _context14.prev = 20;
 
-	            for (_iterator23 = genomicStateList[Symbol.iterator](); !(_iteratorNormalCompletion23 = (_step23 = _iterator23.next()).done); _iteratorNormalCompletion23 = true) {
-	              gs = _step23.value;
+	            for (_iterator24 = genomicStateList[Symbol.iterator](); !(_iteratorNormalCompletion24 = (_step24 = _iterator24.next()).done); _iteratorNormalCompletion24 = true) {
+	              gs = _step24.value;
 	              gs.id = guid();
 	            }
 
@@ -64342,26 +64448,26 @@
 	          case 24:
 	            _context14.prev = 24;
 	            _context14.t0 = _context14["catch"](20);
-	            _didIteratorError23 = true;
-	            _iteratorError23 = _context14.t0;
+	            _didIteratorError24 = true;
+	            _iteratorError24 = _context14.t0;
 
 	          case 28:
 	            _context14.prev = 28;
 	            _context14.prev = 29;
 
-	            if (!_iteratorNormalCompletion23 && _iterator23.return != null) {
-	              _iterator23.return();
+	            if (!_iteratorNormalCompletion24 && _iterator24.return != null) {
+	              _iterator24.return();
 	            }
 
 	          case 31:
 	            _context14.prev = 31;
 
-	            if (!_didIteratorError23) {
+	            if (!_didIteratorError24) {
 	              _context14.next = 34;
 	              break;
 	            }
 
-	            throw _iteratorError23;
+	            throw _iteratorError24;
 
 	          case 34:
 	            return _context14.finish(31);
@@ -64579,26 +64685,26 @@
 	    //Proper dataURI
 	    bytes = decodeDataURI(url);
 	    var json = '';
-	    var _iteratorNormalCompletion25 = true;
-	    var _didIteratorError25 = false;
-	    var _iteratorError25 = undefined;
+	    var _iteratorNormalCompletion26 = true;
+	    var _didIteratorError26 = false;
+	    var _iteratorError26 = undefined;
 
 	    try {
-	      for (var _iterator25 = bytes[Symbol.iterator](), _step25; !(_iteratorNormalCompletion25 = (_step25 = _iterator25.next()).done); _iteratorNormalCompletion25 = true) {
-	        var b = _step25.value;
+	      for (var _iterator26 = bytes[Symbol.iterator](), _step26; !(_iteratorNormalCompletion26 = (_step26 = _iterator26.next()).done); _iteratorNormalCompletion26 = true) {
+	        var b = _step26.value;
 	        json += String.fromCharCode(b);
 	      }
 	    } catch (err) {
-	      _didIteratorError25 = true;
-	      _iteratorError25 = err;
+	      _didIteratorError26 = true;
+	      _iteratorError26 = err;
 	    } finally {
 	      try {
-	        if (!_iteratorNormalCompletion25 && _iterator25.return != null) {
-	          _iterator25.return();
+	        if (!_iteratorNormalCompletion26 && _iterator26.return != null) {
+	          _iterator26.return();
 	        }
 	      } finally {
-	        if (_didIteratorError25) {
-	          throw _iteratorError25;
+	        if (_didIteratorError26) {
+	          throw _iteratorError26;
 	        }
 	      }
 	    }
@@ -64616,6 +64722,39 @@
 	  idx = path.indexOf("?");
 	  surl = (idx > 0 ? path.substring(0, idx) : path) + "?sessionURL=data:" + this.compressedSession();
 	  return surl;
+	};
+
+	Browser.prototype.currentLoci = function () {
+	  var loci = [];
+	  var anyTrackView = this.trackViews[0];
+	  var _iteratorNormalCompletion27 = true;
+	  var _didIteratorError27 = false;
+	  var _iteratorError27 = undefined;
+
+	  try {
+	    for (var _iterator27 = anyTrackView.viewports[Symbol.iterator](), _step27; !(_iteratorNormalCompletion27 = (_step27 = _iterator27.next()).done); _iteratorNormalCompletion27 = true) {
+	      var viewport = _step27.value;
+	      var genomicState = viewport.genomicState;
+	      var pixelWidth = viewport.$viewport[0].clientWidth;
+	      var locusString = genomicState.referenceFrame.showLocus(pixelWidth);
+	      loci.push(locusString);
+	    }
+	  } catch (err) {
+	    _didIteratorError27 = true;
+	    _iteratorError27 = err;
+	  } finally {
+	    try {
+	      if (!_iteratorNormalCompletion27 && _iterator27.return != null) {
+	        _iterator27.return();
+	      }
+	    } finally {
+	      if (_didIteratorError27) {
+	        throw _iteratorError27;
+	      }
+	    }
+	  }
+
+	  return loci;
 	};
 
 	Browser.prototype.presentAlert = function (alert) {
@@ -65324,7 +65463,7 @@
 	  $button.text('Save SVG');
 	  $button.on('click.svg-save-control', function () {
 	    // browser.renderSVG({ $container: $('#igv-svg-container') })
-	    browser.renderSVG({});
+	    browser.saveSVGtoFile({});
 	  });
 	};
 
@@ -66298,7 +66437,7 @@
 	}
 
 	function embedCSS() {
-	  var css = '.igv-user-feedback {\n  position: fixed;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  width: 512px;\n  height: 360px;\n  z-index: 2048;\n  background-color: white;\n  border-color: #a2a2a2;\n  border-style: solid;\n  border-width: thin;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: medium;\n  font-weight: 400;\n  color: #444;\n  display: flex;\n  flex-direction: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-user-feedback div:first-child {\n    position: relative;\n    height: 24px;\n    width: 100%;\n    background-color: white;\n    border-bottom-color: #a2a2a2;\n    border-bottom-style: solid;\n    border-bottom-width: thin; }\n    .igv-user-feedback div:first-child div {\n      position: absolute;\n      top: 2px;\n      width: 16px;\n      height: 16px;\n      background-color: transparent; }\n    .igv-user-feedback div:first-child div:first-child {\n      left: 8px; }\n    .igv-user-feedback div:first-child div:last-child {\n      cursor: pointer;\n      right: 8px; }\n  .igv-user-feedback div:last-child {\n    width: 100%;\n    height: calc(100% - 24px);\n    border-width: 0; }\n    .igv-user-feedback div:last-child div {\n      width: auto;\n      height: auto;\n      margin: 8px; }\n\n.igv-color-swatch {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: wrap;\n  justify-content: center;\n  align-items: center;\n  width: 32px;\n  height: 32px;\n  border-style: solid;\n  border-width: 2px;\n  border-color: white;\n  border-radius: 4px; }\n\n.igv-colorpicker-menu-close-button {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-end;\n  align-items: center;\n  width: 100%;\n  height: 32px;\n  margin-top: 4px;\n  margin-bottom: 4px;\n  padding-right: 8px; }\n  .igv-colorpicker-menu-close-button i.fa {\n    display: block;\n    margin-left: 4px;\n    margin-right: 4px;\n    color: #5f5f5f; }\n  .igv-colorpicker-menu-close-button i.fa:hover,\n  .igv-colorpicker-menu-close-button i.fa:focus,\n  .igv-colorpicker-menu-close-button i.fa:active {\n    cursor: pointer;\n    color: #0f0f0f; }\n\n.igv-alert-dialog-container {\n  position: absolute;\n  z-index: 2048;\n  top: 30%;\n  left: 50%;\n  margin: -150px 0 0 -150px;\n  width: 300px;\n  height: 256px;\n  border-color: #7F7F7F;\n  border-radius: 4px;\n  border-style: solid;\n  border-width: thin;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 15px;\n  font-weight: 400;\n  z-index: 2048;\n  background-color: white;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-alert-dialog-container div:first-child {\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center;\n    width: 100%;\n    height: 24px;\n    cursor: move;\n    border-top-left-radius: 4px;\n    border-top-right-radius: 4px;\n    border-bottom-color: #7F7F7F;\n    border-bottom-style: solid;\n    border-bottom-width: thin;\n    background-color: #eee; }\n    .igv-alert-dialog-container div:first-child div {\n      margin-right: 4px;\n      margin-bottom: 2px;\n      height: 12px;\n      width: 12px;\n      color: #7F7F7F; }\n    .igv-alert-dialog-container div:first-child div:hover {\n      cursor: pointer;\n      color: #444; }\n  .igv-alert-dialog-container #igv-alert-dialog-body {\n    color: #373737;\n    width: 100%;\n    height: calc(100% - 24px - 64px);\n    overflow-y: scroll; }\n    .igv-alert-dialog-container #igv-alert-dialog-body #igv-alert-dialog-body-copy {\n      cursor: pointer;\n      margin: 16px;\n      width: auto;\n      height: auto;\n      overflow-wrap: break-word;\n      word-break: break-word;\n      background-color: white;\n      border: unset; }\n  .igv-alert-dialog-container div:last-child {\n    width: 100%;\n    height: 64px;\n    background-color: white;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: center;\n    align-items: center; }\n    .igv-alert-dialog-container div:last-child div {\n      width: 98px;\n      height: 36px;\n      line-height: 36px;\n      text-align: center;\n      color: white;\n      font-family: \"Open Sans\", sans-serif;\n      font-size: medium;\n      font-weight: 400;\n      border-color: #2B81AF;\n      border-style: solid;\n      border-width: thin;\n      border-radius: 4px;\n      background-color: #2B81AF; }\n    .igv-alert-dialog-container div:last-child div:hover {\n      cursor: pointer;\n      border-color: #25597f;\n      background-color: #25597f; }\n\n.igv-generic-container {\n  position: absolute;\n  top: 0;\n  left: 0;\n  z-index: 2048;\n  background-color: white;\n  cursor: pointer;\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-generic-container div:first-child {\n    cursor: move;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center;\n    height: 24px;\n    width: 100%;\n    background-color: #dddddd; }\n    .igv-generic-container div:first-child i {\n      display: block;\n      color: #5f5f5f;\n      cursor: pointer;\n      width: 14px;\n      height: 14px;\n      margin-right: 8px;\n      margin-bottom: 4px; }\n\n.igv-generic-dialog-container {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 300px;\n  height: 200px;\n  border-color: #7F7F7F;\n  border-radius: 4px;\n  border-style: solid;\n  border-width: thin;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: medium;\n  font-weight: 400;\n  z-index: 2048;\n  background-color: white;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-generic-dialog-container .igv-generic-dialog-header {\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center;\n    width: 100%;\n    height: 24px;\n    cursor: move;\n    border-top-left-radius: 4px;\n    border-top-right-radius: 4px;\n    border-bottom-color: #7F7F7F;\n    border-bottom-style: solid;\n    border-bottom-width: thin;\n    background-color: #eee; }\n    .igv-generic-dialog-container .igv-generic-dialog-header div {\n      margin-right: 4px;\n      margin-bottom: 2px;\n      height: 12px;\n      width: 12px;\n      color: #7F7F7F; }\n    .igv-generic-dialog-container .igv-generic-dialog-header div:hover {\n      cursor: pointer;\n      color: #444; }\n  .igv-generic-dialog-container .igv-generic-dialog-one-liner {\n    color: #373737;\n    width: 95%;\n    height: 24px;\n    line-height: 24px;\n    text-align: left;\n    margin-top: 8px;\n    padding-left: 8px;\n    overflow-wrap: break-word;\n    background-color: white; }\n  .igv-generic-dialog-container .igv-generic-dialog-label-input {\n    margin-top: 8px;\n    width: 95%;\n    height: 24px;\n    color: #373737;\n    line-height: 24px;\n    padding-left: 8px;\n    background-color: white;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-start;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-label-input div {\n      width: 30%;\n      height: 100%;\n      font-size: 16px;\n      text-align: right;\n      padding-right: 8px;\n      background-color: white; }\n    .igv-generic-dialog-container .igv-generic-dialog-label-input input {\n      display: block;\n      height: 100%;\n      width: 100%;\n      padding-left: 4px;\n      font-family: \"Open Sans\", sans-serif;\n      font-weight: 400;\n      color: #373737;\n      text-align: left;\n      outline: none;\n      border-style: solid;\n      border-width: thin;\n      border-color: #7F7F7F;\n      background-color: white; }\n    .igv-generic-dialog-container .igv-generic-dialog-label-input input {\n      width: 50%;\n      font-size: 16px; }\n  .igv-generic-dialog-container .igv-generic-dialog-input {\n    margin-top: 8px;\n    width: calc(100% - 16px);\n    height: 24px;\n    color: #373737;\n    line-height: 24px;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-around;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-input input {\n      display: block;\n      height: 100%;\n      width: 100%;\n      padding-left: 4px;\n      font-family: \"Open Sans\", sans-serif;\n      font-weight: 400;\n      color: #373737;\n      text-align: left;\n      outline: none;\n      border-style: solid;\n      border-width: thin;\n      border-color: #7F7F7F;\n      background-color: white; }\n    .igv-generic-dialog-container .igv-generic-dialog-input input {\n      font-size: 16px; }\n  .igv-generic-dialog-container .igv-generic-dialog-ok-cancel {\n    width: 100%;\n    height: 28px;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-around;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div {\n      margin-top: 32px;\n      color: white;\n      font-family: \"Open Sans\", sans-serif;\n      font-size: 14px;\n      font-weight: 400;\n      width: 75px;\n      height: 28px;\n      line-height: 28px;\n      text-align: center;\n      border-color: transparent;\n      border-style: solid;\n      border-width: thin;\n      border-radius: 2px; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:first-child {\n      margin-left: 32px;\n      margin-right: 0;\n      background-color: #5ea4e0; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:last-child {\n      margin-left: 0;\n      margin-right: 32px;\n      background-color: #c4c4c4; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:first-child:hover {\n      cursor: pointer;\n      background-color: #3b5c7f; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:last-child:hover {\n      cursor: pointer;\n      background-color: #7f7f7f; }\n  .igv-generic-dialog-container .igv-generic-dialog-ok {\n    width: 100%;\n    height: 36px;\n    margin-top: 32px;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-around;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok div {\n      width: 98px;\n      height: 36px;\n      line-height: 36px;\n      text-align: center;\n      color: white;\n      font-family: \"Open Sans\", sans-serif;\n      font-size: medium;\n      font-weight: 400;\n      border-color: white;\n      border-style: solid;\n      border-width: thin;\n      border-radius: 4px;\n      background-color: #2B81AF; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok div:hover {\n      cursor: pointer;\n      background-color: #25597f; }\n\n.igv-popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  min-width: 128px;\n  z-index: 4096;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: small;\n  font-weight: 400;\n  color: #4b4b4b;\n  background-color: white;\n  border-radius: 4px;\n  border-color: #7F7F7F;\n  border-style: solid;\n  border-width: thin;\n  display: none; }\n\n.igv-popover-header {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  justify-content: flex-end;\n  align-items: center;\n  width: 100%;\n  height: 24px;\n  cursor: move;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-color: #7F7F7F;\n  border-bottom-style: solid;\n  border-bottom-width: thin;\n  background-color: #eee; }\n  .igv-popover-header div {\n    margin-right: 4px;\n    height: 12px;\n    width: 12px;\n    color: #7F7F7F; }\n  .igv-popover-header div:hover {\n    cursor: pointer;\n    color: #444; }\n\n.igv-popover-track-popup-content {\n  position: relative;\n  top: 0;\n  left: 0;\n  max-height: 384px;\n  overflow-x: hidden;\n  overflow-y: auto;\n  background-color: white; }\n  .igv-popover-track-popup-content div {\n    margin-left: 4px;\n    background-color: white; }\n  .igv-popover-track-popup-content div:hover {\n    cursor: pointer;\n    background-color: #efefef; }\n\n.igv-popover-name-value {\n  cursor: default;\n  text-wrap: none;\n  white-space: nowrap;\n  max-width: 384px; }\n\n.igv-popover-name {\n  font-weight: bold;\n  padding-right: 4px;\n  float: left; }\n\n.igv-popover-value {\n  padding-left: 4px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  max-width: 256px;\n  display: inline-block; }\n\n.igv-trackgear-container {\n  position: relative;\n  width: 20px;\n  height: 20px;\n  margin-left: 4px;\n  color: #7F7F7F; }\n\n.igv-trackgear-container:hover {\n  cursor: pointer;\n  color: #444; }\n\n.igv-trackgear-popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  min-width: 132px;\n  z-index: 4096;\n  cursor: pointer;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: small;\n  font-weight: 400;\n  color: #4b4b4b;\n  background: white;\n  border-radius: 4px;\n  border-color: #7F7F7F;\n  border-style: solid;\n  border-width: thin;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: flex-end;\n  text-align: left; }\n  .igv-trackgear-popover > div:not(:first-child) {\n    width: 100%; }\n    .igv-trackgear-popover > div:not(:first-child) > div {\n      background: white; }\n    .igv-trackgear-popover > div:not(:first-child) > div:last-child {\n      border-bottom-left-radius: 4px;\n      border-bottom-right-radius: 4px;\n      border-bottom-color: transparent;\n      border-bottom-style: solid;\n      border-bottom-width: thin; }\n    .igv-trackgear-popover > div:not(:first-child) > div:hover {\n      background: #efefef; }\n\n.igv-trackgear-popover-shim {\n  padding-left: 8px;\n  padding-right: 8px; }\n\n.igv-trackgear-popover-header {\n  position: relative;\n  width: 100%;\n  height: 24px;\n  cursor: move;\n  border-top-color: transparent;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-color: #7F7F7F;\n  border-bottom-style: solid;\n  border-bottom-width: thin;\n  background-color: #eee;\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-end;\n  align-items: center; }\n  .igv-trackgear-popover-header div {\n    margin-right: 4px;\n    height: 12px;\n    width: 12px;\n    color: #7F7F7F; }\n  .igv-trackgear-popover-header div:hover {\n    cursor: pointer;\n    color: #444; }\n\n.igv-trackgear-popover-check-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center;\n  width: 100%;\n  height: 20px;\n  background-color: transparent; }\n  .igv-trackgear-popover-check-container div {\n    padding-top: 2px;\n    padding-left: 8px; }\n  .igv-trackgear-popover-check-container div:first-child {\n    position: relative;\n    width: 12px;\n    height: 12px; }\n    .igv-trackgear-popover-check-container div:first-child svg {\n      position: absolute;\n      width: 12px;\n      height: 12px; }\n\n.igvControlDiv {\n  position: relative; }\n\n.igv-content-header {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center;\n  margin-top: 10px;\n  height: 16px;\n  width: 100%; }\n  .igv-content-header .igv-ideogram-shim {\n    height: 100%;\n    width: 50px;\n    background-color: white; }\n  .igv-content-header .igv-ideogram-content {\n    height: 100%;\n    background-color: white; }\n  .igv-content-header .igv-ideogram-content-border-right {\n    border-right-color: #292929;\n    border-right-style: solid;\n    border-right-width: 1px; }\n\n.igv-multi-locus-panel-border {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 1px;\n  background-color: green;\n  border-right-color: #ff0000;\n  border-right-style: solid;\n  border-right-width: 1px; }\n\n.igv-navbar {\n  position: relative;\n  padding-left: 8px;\n  padding-right: 8px;\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  color: #444;\n  font-size: 12px;\n  font-family: \"Open Sans\", sans-serif;\n  font-weight: 400;\n  line-height: 32px;\n  margin-top: 2px;\n  margin-bottom: 4px;\n  height: 32px;\n  border-style: solid;\n  border-radius: 3px;\n  border-width: thin;\n  border-color: #bfbfbf;\n  background-color: #f3f3f3; }\n\n.igv-nav-bar-left-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  height: 32px;\n  line-height: 32px; }\n  .igv-nav-bar-left-container .igv-logo {\n    width: 34px;\n    height: 32px;\n    margin-top: 6px;\n    margin-right: 8px; }\n  .igv-nav-bar-left-container .igv-current-genome {\n    height: 32px;\n    width: 40px;\n    margin-left: 4px;\n    margin-right: 4px;\n    user-select: none;\n    line-height: 32px;\n    vertical-align: middle;\n    text-align: center; }\n\n.igv-nav-bar-genomic-location {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  height: 100%; }\n\n.igv-chromosome-select-widget-container {\n  height: 100%;\n  width: 125px;\n  margin-right: 4px;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: space-around;\n  align-items: center; }\n  .igv-chromosome-select-widget-container select {\n    display: block;\n    cursor: pointer;\n    width: 100px;\n    height: 75%;\n    outline: none;\n    font-size: 12px;\n    font-family: \"Open Sans\", sans-serif;\n    font-weight: 400; }\n\n.igv-locus-size-group {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  margin-left: 8px;\n  height: calc(32px - 10px); }\n  .igv-locus-size-group .igv-search-container {\n    width: 200px;\n    height: calc(32px - 10px);\n    line-height: calc(32px - 10px);\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-start;\n    align-items: center; }\n    .igv-locus-size-group .igv-search-container input {\n      cursor: text;\n      width: 85%;\n      height: calc(32px - 10px);\n      line-height: calc(32px - 10px);\n      font-size: 12px;\n      font-family: \"Open Sans\", sans-serif;\n      font-weight: 400;\n      text-align: left;\n      padding-left: 8px;\n      margin-right: 8px;\n      outline: none;\n      border-style: solid;\n      border-radius: 3px;\n      border-width: thin;\n      border-color: #bfbfbf;\n      background-color: white; }\n    .igv-locus-size-group .igv-search-container div {\n      cursor: pointer;\n      height: 16px;\n      width: 16px; }\n  .igv-locus-size-group .igv-windowsizepanel-content-div {\n    margin-left: 4px;\n    user-select: none; }\n\n.igv-nav-bar-right-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  height: 32px;\n  line-height: 32px; }\n  .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container {\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-between;\n    align-items: center;\n    height: 100%; }\n    .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container div {\n      margin-left: 0;\n      margin-right: 4px; }\n    .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container div:last-child {\n      margin-left: 0;\n      margin-right: 0; }\n  .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container-750 {\n    display: none; }\n  .igv-nav-bar-right-container .igv-zoom-widget {\n    color: #737373;\n    font-size: 18px;\n    height: 32px;\n    line-height: 32px;\n    margin-left: 8px;\n    user-select: none;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center; }\n    .igv-nav-bar-right-container .igv-zoom-widget div {\n      cursor: pointer;\n      margin-left: unset;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget div:first-child {\n      height: 24px;\n      width: 24px;\n      margin-left: unset;\n      margin-right: 8px; }\n    .igv-nav-bar-right-container .igv-zoom-widget div:last-child {\n      height: 24px;\n      width: 24px;\n      margin-left: 8px;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget div:nth-child(even) {\n      display: block;\n      height: fit-content; }\n    .igv-nav-bar-right-container .igv-zoom-widget input {\n      display: block;\n      width: 125px; }\n    .igv-nav-bar-right-container .igv-zoom-widget svg {\n      display: block; }\n  .igv-nav-bar-right-container .igv-zoom-widget-900 {\n    color: #737373;\n    font-size: 18px;\n    height: 32px;\n    line-height: 32px;\n    margin-left: 8px;\n    user-select: none;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div {\n      cursor: pointer;\n      margin-left: unset;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div:first-child {\n      height: 24px;\n      width: 24px;\n      margin-left: unset;\n      margin-right: 8px; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div:last-child {\n      height: 24px;\n      width: 24px;\n      margin-left: 8px;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div:nth-child(even) {\n      width: 0;\n      height: 0;\n      display: none; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 input {\n      width: 0;\n      height: 0;\n      display: none; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 svg {\n      display: block; }\n  .igv-nav-bar-right-container .igv-zoom-widget-hidden {\n    display: none; }\n\n.igv-nav-bar-button {\n  box-sizing: unset;\n  padding-left: 6px;\n  padding-right: 6px;\n  height: 18px;\n  text-transform: capitalize;\n  user-select: none;\n  line-height: 18px;\n  text-align: center;\n  vertical-align: middle;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 11px;\n  font-weight: 200;\n  color: #737373;\n  background-color: #f3f3f3;\n  border-color: #737373;\n  border-style: solid;\n  border-width: thin;\n  border-radius: 6px; }\n\n.igv-nav-bar-button-clicked {\n  color: white;\n  background-color: #737373; }\n\n.igv-nav-bar-button:hover {\n  cursor: pointer; }\n\n.igv-logo-nonav {\n  margin-left: 4px;\n  margin-top: 12px;\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 34px;\n  height: 16px; }\n\n.igv-search-results {\n  position: absolute;\n  top: 32px;\n  left: 2px;\n  height: 320px;\n  width: 213px;\n  background-color: white;\n  border-color: #7F7F7F;\n  border-style: solid;\n  border-width: thin;\n  overflow-x: hidden;\n  overflow-y: auto;\n  z-index: 9999; }\n  .igv-search-results tr {\n    font-family: \"Open Sans\", sans-serif;\n    font-size: small;\n    font-weight: 400;\n    color: #444; }\n  .igv-search-results tr:hover,\n  .igv-search-results tr:focus,\n  .igv-search-results tr:active {\n    cursor: pointer;\n    font-weight: 700;\n    color: #141414; }\n\n.igv-root-div {\n  position: relative;\n  left: 0;\n  right: 0;\n  height: auto;\n  margin-left: 10px;\n  margin-right: 10px;\n  padding-top: 4px; }\n\n.igv-content-div {\n  position: relative;\n  width: 100%;\n  height: 100%; }\n\n.igv-track-container-div {\n  user-select: none;\n  position: relative;\n  clear: both; }\n\n.igv-track-div {\n  position: relative;\n  width: 100%;\n  margin-top: 5px;\n  margin-bottom: 5px; }\n\n.igv-viewport-container {\n  position: absolute;\n  left: 50px;\n  right: 50px;\n  height: 100%;\n  white-space: nowrap;\n  overflow-x: hidden;\n  overflow-y: hidden; }\n\n.igv-viewport-div {\n  position: relative;\n  display: inline-block;\n  height: 100%;\n  overflow-x: hidden;\n  overflow-y: hidden; }\n\n.igv-viewport-content-div {\n  position: absolute;\n  width: 100%; }\n\n.igv-viewport-message {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  color: rgba(0, 0, 0, 0.15);\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 25px;\n  font-weight: bold;\n  user-select: none; }\n\n.igv-whole-genome-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  width: 100%;\n  height: 100%;\n  background-color: white; }\n  .igv-whole-genome-container div {\n    font-family: \"Open Sans\", sans-serif;\n    font-size: 10px;\n    font-weight: 400;\n    color: #444;\n    height: 100%;\n    text-align: center;\n    border-right-color: #bfbfbf;\n    border-right-style: solid;\n    border-right-width: thin; }\n    .igv-whole-genome-container div span {\n      display: block;\n      padding-top: 6px;\n      text-overflow: ellipsis; }\n  .igv-whole-genome-container div:last-child {\n    border-right-color: transparent; }\n  .igv-whole-genome-container div:hover,\n  .igv-whole-genome-container div:focus,\n  .igv-whole-genome-container div:active {\n    cursor: pointer;\n    background-color: #efefef; }\n\n.igv-viewport-div-border-right {\n  border-right-color: #292929;\n  border-right-style: solid;\n  border-right-width: 1px; }\n\n.igv-multi-locus-panel-close-container {\n  position: absolute;\n  top: 4px;\n  right: 4px;\n  width: 16px;\n  height: 16px;\n  color: #666666;\n  z-index: 1000; }\n\n.igv-multi-locus-panel-close-container:hover {\n  cursor: pointer;\n  color: #434343; }\n\n.igv-multi-locus-panel-label-div {\n  position: absolute;\n  left: 50%;\n  top: 25%;\n  transform: translate(-50%, -25%);\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 12px;\n  font-weight: 400;\n  text-align: center;\n  min-width: 16px;\n  z-index: 64;\n  color: #373737;\n  background-color: white;\n  padding: 1px; }\n\n.igv-multi-locus-panel-label-div:hover {\n  cursor: pointer; }\n\n.igv-viewport-ruler {\n  cursor: pointer;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 10px;\n  font-weight: 200;\n  text-align: center; }\n  .igv-viewport-ruler > div {\n    height: 100%; }\n\n.igv-viewport-sequence {\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 8px;\n  font-weight: 200;\n  text-align: center; }\n\n.igv-viewport-spinner {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  z-index: 1024;\n  width: 24px;\n  height: 24px;\n  pointer-events: none;\n  color: #737373; }\n\n.igv-track-container-spinner {\n  position: absolute;\n  top: 90%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  z-index: 1024;\n  width: 24px;\n  height: 24px;\n  pointer-events: none;\n  color: #737373; }\n\n.igv-ruler-sweeper-div {\n  display: none;\n  pointer-events: none;\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 0;\n  height: 100%;\n  z-index: 99999;\n  background-color: rgba(68, 134, 247, 0.25); }\n\n.igv-right-hand-gutter {\n  position: absolute;\n  right: 0;\n  width: 36px;\n  height: 100%;\n  background: white; }\n\n.igv-left-hand-gutter {\n  position: absolute;\n  left: 0;\n  width: 50px;\n  height: 100%; }\n  .igv-left-hand-gutter canvas {\n    position: absolute; }\n\n.igv-track-menu-border-top {\n  border-top-color: #a2a2a2;\n  border-top-style: solid;\n  border-top-width: thin; }\n\n.igv-track-menu-category {\n  padding-left: 4px;\n  font-weight: 400; }\n\n.igv-track-drag-scrim {\n  position: absolute;\n  left: 0;\n  top: 0;\n  width: 100%;\n  height: 100%;\n  z-index: 256;\n  background-color: rgba(68, 134, 247, 0.25); }\n\n.igv-track-manipulation-handle {\n  cursor: pointer;\n  position: absolute;\n  right: 36px;\n  width: 12px;\n  margin-left: 2px;\n  height: 100%;\n  box-sizing: border-box;\n  font-size: medium;\n  border-color: #c4c4c4;\n  border-style: solid;\n  border-width: thin;\n  border-top-right-radius: 6px;\n  border-bottom-right-radius: 6px;\n  z-index: 512;\n  background-color: #c4c4c4; }\n\n.igv-track-manipulation-handle:hover,\n.igv-track-manipulation-handle:focus,\n.igv-track-manipulation-handle:active {\n  border-color: #7e7e7e;\n  background-color: #7e7e7e; }\n\n.igv-track-label {\n  position: absolute;\n  left: 8px;\n  top: 4px;\n  width: auto;\n  height: auto;\n  max-width: 200px;\n  padding-left: 4px;\n  padding-right: 4px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: small;\n  font-weight: 400;\n  text-align: center;\n  user-select: none;\n  -moz-user-select: none;\n  -webkit-user-select: none;\n  border-color: #444;\n  border-radius: 2px;\n  border-style: solid;\n  border-width: thin;\n  background-color: white;\n  z-index: 128;\n  cursor: pointer; }\n\n.igv-track-label:hover,\n.igv-track-label:focus,\n.igv-track-label:active {\n  background-color: rgba(0, 0, 0, 0.05); }\n\n.igv-scrollbar-outer-div {\n  position: absolute;\n  top: 0;\n  right: 0;\n  width: 14px;\n  height: 100%;\n  background-color: white; }\n  .igv-scrollbar-outer-div div {\n    position: absolute;\n    top: 0;\n    left: 3px;\n    width: 8px;\n    border-style: solid;\n    border-width: thin;\n    border-color: #c4c4c4;\n    border-top-left-radius: 4px;\n    border-top-right-radius: 4px;\n    border-bottom-left-radius: 4px;\n    border-bottom-right-radius: 4px;\n    background-color: white; }\n  .igv-scrollbar-outer-div div:hover,\n  .igv-scrollbar-outer-div div:focus,\n  .igv-scrollbar-outer-div div:active {\n    cursor: pointer;\n    background-color: #c4c4c4; }\n\n.zoom-in-notice-container {\n  position: absolute;\n  top: 10px;\n  left: 50%; }\n  .zoom-in-notice-container div {\n    position: relative;\n    left: -50%;\n    font-family: \"Open Sans\", sans-serif;\n    font-size: medium;\n    font-weight: 400;\n    color: #3f3f3f;\n    background-color: rgba(255, 255, 255, 0.51);\n    z-index: 64; }\n\n.igv-center-guide {\n  pointer-events: none;\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 50%;\n  width: 8px;\n  z-index: 8;\n  display: none;\n  user-select: none;\n  -moz-user-select: none;\n  -webkit-user-select: none;\n  border-left-style: dashed;\n  border-left-width: thin;\n  border-right-style: dashed;\n  border-right-width: thin; }\n\n.igv-center-guide-wide {\n  background-color: rgba(0, 0, 0, 0);\n  border-left-color: rgba(127, 127, 127, 0.51);\n  border-right-color: rgba(127, 127, 127, 0.51); }\n\n.igv-center-guide-thin {\n  left: 50%;\n  width: 1px;\n  background-color: rgba(0, 0, 0, 0);\n  border-left-color: rgba(127, 127, 127, 0.51);\n  border-right-color: rgba(0, 0, 0, 0);\n  /*background-color: rgba(127, 127, 127, 0.51);*/\n  /*border-left-color: rgba(0,0,0,0);*/\n  /*border-right-color: rgba(0,0,0,0);*/ }\n\n.igv-cursor-tracking-guide {\n  pointer-events: none;\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 50%;\n  width: 1px;\n  z-index: 1;\n  border-left-style: dotted;\n  border-left-width: thin;\n  border-left-color: rgba(127, 127, 127, 0.76);\n  display: none;\n  user-select: none;\n  -moz-user-select: none;\n  -webkit-user-select: none; }\n\n.igv-clickable {\n  cursor: pointer;\n  background-color: white; }\n\n#color-by-tag {\n  color: #444; }\n\n#color-by-tag:hover,\n#color-by-tag:focus,\n#color-by-tag:active {\n  cursor: pointer;\n  padding-left: 2px;\n  padding-right: 2px;\n  color: white;\n  border-color: #444;\n  border-radius: 2px;\n  border-style: solid;\n  border-width: thin;\n  background-color: #7f7f7f; }\n\n.igv-ellipsis {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.igv-spinner-container {\n  color: #3f3f3f;\n  width: 100%;\n  height: 100%;\n  text-align: center;\n  padding-top: 8px;\n  font-size: 24px;\n  z-index: 512; }\n\n.igv-fa-check-visible {\n  color: inherit;\n  padding-right: 2px; }\n\n.igv-fa-check-hidden {\n  color: transparent;\n  padding-right: 2px; }\n\n.validateTips {\n  border: 1px solid transparent;\n  padding: 0.3em; }\n  .validateTips fieldset {\n    border: 0; }\n\n.igv-spacer-10 {\n  height: 10px;\n  width: 100%;\n  font-size: 0;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  display: block; }\n\n.igv-fa5-spin {\n  -webkit-animation: igv-fa5-spin 2s infinite linear;\n  animation: igv-fa5-spin 2s infinite linear; }\n\n@-webkit-keyframes igv-fa5-spin {\n  0% {\n    -webkit-transform: rotate(0deg);\n    transform: rotate(0deg); }\n  100% {\n    -webkit-transform: rotate(360deg);\n    transform: rotate(360deg); } }\n@keyframes igv-fa5-spin {\n  0% {\n    -webkit-transform: rotate(0deg);\n    transform: rotate(0deg); }\n  100% {\n    -webkit-transform: rotate(360deg);\n    transform: rotate(360deg); } }\n\n/*# sourceMappingURL=igv.css.map */\n';
+	  var css = '.igv-user-feedback {\n  position: fixed;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  width: 512px;\n  height: 360px;\n  z-index: 2048;\n  background-color: white;\n  border-color: #a2a2a2;\n  border-style: solid;\n  border-width: thin;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: medium;\n  font-weight: 400;\n  color: #444;\n  display: flex;\n  flex-direction: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-user-feedback div:first-child {\n    position: relative;\n    height: 24px;\n    width: 100%;\n    background-color: white;\n    border-bottom-color: #a2a2a2;\n    border-bottom-style: solid;\n    border-bottom-width: thin; }\n    .igv-user-feedback div:first-child div {\n      position: absolute;\n      top: 2px;\n      width: 16px;\n      height: 16px;\n      background-color: transparent; }\n    .igv-user-feedback div:first-child div:first-child {\n      left: 8px; }\n    .igv-user-feedback div:first-child div:last-child {\n      cursor: pointer;\n      right: 8px; }\n  .igv-user-feedback div:last-child {\n    width: 100%;\n    height: calc(100% - 24px);\n    border-width: 0; }\n    .igv-user-feedback div:last-child div {\n      width: auto;\n      height: auto;\n      margin: 8px; }\n\n.igv-color-swatch {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: wrap;\n  justify-content: center;\n  align-items: center;\n  width: 32px;\n  height: 32px;\n  border-style: solid;\n  border-width: 2px;\n  border-color: white;\n  border-radius: 4px; }\n\n.igv-colorpicker-menu-close-button {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-end;\n  align-items: center;\n  width: 100%;\n  height: 32px;\n  margin-top: 4px;\n  margin-bottom: 4px;\n  padding-right: 8px; }\n  .igv-colorpicker-menu-close-button i.fa {\n    display: block;\n    margin-left: 4px;\n    margin-right: 4px;\n    color: #5f5f5f; }\n  .igv-colorpicker-menu-close-button i.fa:hover,\n  .igv-colorpicker-menu-close-button i.fa:focus,\n  .igv-colorpicker-menu-close-button i.fa:active {\n    cursor: pointer;\n    color: #0f0f0f; }\n\n.igv-alert-dialog-container {\n  position: absolute;\n  z-index: 2048;\n  top: 30%;\n  left: 50%;\n  margin: -150px 0 0 -150px;\n  width: 300px;\n  height: 256px;\n  border-color: #7F7F7F;\n  border-radius: 4px;\n  border-style: solid;\n  border-width: thin;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 15px;\n  font-weight: 400;\n  z-index: 2048;\n  background-color: white;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-alert-dialog-container div:first-child {\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center;\n    width: 100%;\n    height: 24px;\n    cursor: move;\n    border-top-left-radius: 4px;\n    border-top-right-radius: 4px;\n    border-bottom-color: #7F7F7F;\n    border-bottom-style: solid;\n    border-bottom-width: thin;\n    background-color: #eee; }\n    .igv-alert-dialog-container div:first-child div {\n      margin-right: 4px;\n      margin-bottom: 2px;\n      height: 12px;\n      width: 12px;\n      color: #7F7F7F; }\n    .igv-alert-dialog-container div:first-child div:hover {\n      cursor: pointer;\n      color: #444; }\n  .igv-alert-dialog-container #igv-alert-dialog-body {\n    color: #373737;\n    width: 100%;\n    height: calc(100% - 24px - 64px);\n    overflow-y: scroll; }\n    .igv-alert-dialog-container #igv-alert-dialog-body #igv-alert-dialog-body-copy {\n      cursor: pointer;\n      margin: 16px;\n      width: auto;\n      height: auto;\n      overflow-wrap: break-word;\n      word-break: break-word;\n      background-color: white;\n      border: unset; }\n  .igv-alert-dialog-container div:last-child {\n    width: 100%;\n    height: 64px;\n    background-color: white;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: center;\n    align-items: center; }\n    .igv-alert-dialog-container div:last-child div {\n      width: 98px;\n      height: 36px;\n      line-height: 36px;\n      text-align: center;\n      color: white;\n      font-family: \"Open Sans\", sans-serif;\n      font-size: medium;\n      font-weight: 400;\n      border-color: #2B81AF;\n      border-style: solid;\n      border-width: thin;\n      border-radius: 4px;\n      background-color: #2B81AF; }\n    .igv-alert-dialog-container div:last-child div:hover {\n      cursor: pointer;\n      border-color: #25597f;\n      background-color: #25597f; }\n\n.igv-generic-container {\n  position: absolute;\n  top: 0;\n  left: 0;\n  z-index: 2048;\n  background-color: white;\n  cursor: pointer;\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-generic-container div:first-child {\n    cursor: move;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center;\n    height: 24px;\n    width: 100%;\n    background-color: #dddddd; }\n    .igv-generic-container div:first-child i {\n      display: block;\n      color: #5f5f5f;\n      cursor: pointer;\n      width: 14px;\n      height: 14px;\n      margin-right: 8px;\n      margin-bottom: 4px; }\n\n.igv-generic-dialog-container {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 300px;\n  height: 200px;\n  border-color: #7F7F7F;\n  border-radius: 4px;\n  border-style: solid;\n  border-width: thin;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: medium;\n  font-weight: 400;\n  z-index: 2048;\n  background-color: white;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center; }\n  .igv-generic-dialog-container .igv-generic-dialog-header {\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center;\n    width: 100%;\n    height: 24px;\n    cursor: move;\n    border-top-left-radius: 4px;\n    border-top-right-radius: 4px;\n    border-bottom-color: #7F7F7F;\n    border-bottom-style: solid;\n    border-bottom-width: thin;\n    background-color: #eee; }\n    .igv-generic-dialog-container .igv-generic-dialog-header div {\n      margin-right: 4px;\n      margin-bottom: 2px;\n      height: 12px;\n      width: 12px;\n      color: #7F7F7F; }\n    .igv-generic-dialog-container .igv-generic-dialog-header div:hover {\n      cursor: pointer;\n      color: #444; }\n  .igv-generic-dialog-container .igv-generic-dialog-one-liner {\n    color: #373737;\n    width: 95%;\n    height: 24px;\n    line-height: 24px;\n    text-align: left;\n    margin-top: 8px;\n    padding-left: 8px;\n    overflow-wrap: break-word;\n    background-color: white; }\n  .igv-generic-dialog-container .igv-generic-dialog-label-input {\n    margin-top: 8px;\n    width: 95%;\n    height: 24px;\n    color: #373737;\n    line-height: 24px;\n    padding-left: 8px;\n    background-color: white;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-start;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-label-input div {\n      width: 30%;\n      height: 100%;\n      font-size: 16px;\n      text-align: right;\n      padding-right: 8px;\n      background-color: white; }\n    .igv-generic-dialog-container .igv-generic-dialog-label-input input {\n      display: block;\n      height: 100%;\n      width: 100%;\n      padding-left: 4px;\n      font-family: \"Open Sans\", sans-serif;\n      font-weight: 400;\n      color: #373737;\n      text-align: left;\n      outline: none;\n      border-style: solid;\n      border-width: thin;\n      border-color: #7F7F7F;\n      background-color: white; }\n    .igv-generic-dialog-container .igv-generic-dialog-label-input input {\n      width: 50%;\n      font-size: 16px; }\n  .igv-generic-dialog-container .igv-generic-dialog-input {\n    margin-top: 8px;\n    width: calc(100% - 16px);\n    height: 24px;\n    color: #373737;\n    line-height: 24px;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-around;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-input input {\n      display: block;\n      height: 100%;\n      width: 100%;\n      padding-left: 4px;\n      font-family: \"Open Sans\", sans-serif;\n      font-weight: 400;\n      color: #373737;\n      text-align: left;\n      outline: none;\n      border-style: solid;\n      border-width: thin;\n      border-color: #7F7F7F;\n      background-color: white; }\n    .igv-generic-dialog-container .igv-generic-dialog-input input {\n      font-size: 16px; }\n  .igv-generic-dialog-container .igv-generic-dialog-ok-cancel {\n    width: 100%;\n    height: 28px;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-around;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div {\n      margin-top: 32px;\n      color: white;\n      font-family: \"Open Sans\", sans-serif;\n      font-size: 14px;\n      font-weight: 400;\n      width: 75px;\n      height: 28px;\n      line-height: 28px;\n      text-align: center;\n      border-color: transparent;\n      border-style: solid;\n      border-width: thin;\n      border-radius: 2px; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:first-child {\n      margin-left: 32px;\n      margin-right: 0;\n      background-color: #5ea4e0; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:last-child {\n      margin-left: 0;\n      margin-right: 32px;\n      background-color: #c4c4c4; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:first-child:hover {\n      cursor: pointer;\n      background-color: #3b5c7f; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok-cancel div:last-child:hover {\n      cursor: pointer;\n      background-color: #7f7f7f; }\n  .igv-generic-dialog-container .igv-generic-dialog-ok {\n    width: 100%;\n    height: 36px;\n    margin-top: 32px;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-around;\n    align-items: center; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok div {\n      width: 98px;\n      height: 36px;\n      line-height: 36px;\n      text-align: center;\n      color: white;\n      font-family: \"Open Sans\", sans-serif;\n      font-size: medium;\n      font-weight: 400;\n      border-color: white;\n      border-style: solid;\n      border-width: thin;\n      border-radius: 4px;\n      background-color: #2B81AF; }\n    .igv-generic-dialog-container .igv-generic-dialog-ok div:hover {\n      cursor: pointer;\n      background-color: #25597f; }\n\n.igv-popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  min-width: 128px;\n  z-index: 4096;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: small;\n  font-weight: 400;\n  color: #4b4b4b;\n  background-color: white;\n  border-radius: 4px;\n  border-color: #7F7F7F;\n  border-style: solid;\n  border-width: thin;\n  display: none; }\n\n.igv-popover-header {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  justify-content: flex-end;\n  align-items: center;\n  width: 100%;\n  height: 24px;\n  cursor: move;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-color: #7F7F7F;\n  border-bottom-style: solid;\n  border-bottom-width: thin;\n  background-color: #eee; }\n  .igv-popover-header div {\n    margin-right: 4px;\n    height: 12px;\n    width: 12px;\n    color: #7F7F7F; }\n  .igv-popover-header div:hover {\n    cursor: pointer;\n    color: #444; }\n\n.igv-popover-track-popup-content {\n  position: relative;\n  top: 0;\n  left: 0;\n  max-height: 384px;\n  overflow-x: hidden;\n  overflow-y: auto;\n  background-color: white; }\n  .igv-popover-track-popup-content div {\n    margin-left: 4px;\n    background-color: white; }\n  .igv-popover-track-popup-content div:hover {\n    cursor: pointer;\n    background-color: #efefef; }\n\n.igv-popover-name-value {\n  cursor: default;\n  text-wrap: none;\n  white-space: nowrap;\n  max-width: 384px; }\n\n.igv-popover-name {\n  font-weight: bold;\n  padding-right: 4px;\n  float: left; }\n\n.igv-popover-value {\n  padding-left: 4px;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  max-width: 256px;\n  display: inline-block; }\n\n.igv-trackgear-container {\n  position: relative;\n  width: 20px;\n  height: 20px;\n  margin-left: 4px;\n  color: #7F7F7F; }\n\n.igv-trackgear-container:hover {\n  cursor: pointer;\n  color: #444; }\n\n.igv-trackgear-popover {\n  position: absolute;\n  top: 0;\n  left: 0;\n  min-width: 132px;\n  z-index: 4096;\n  cursor: pointer;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: small;\n  font-weight: 400;\n  color: #4b4b4b;\n  background: white;\n  border-radius: 4px;\n  border-color: #7F7F7F;\n  border-style: solid;\n  border-width: thin;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: flex-end;\n  text-align: left; }\n  .igv-trackgear-popover > div:not(:first-child) {\n    width: 100%; }\n    .igv-trackgear-popover > div:not(:first-child) > div {\n      background: white; }\n    .igv-trackgear-popover > div:not(:first-child) > div:last-child {\n      border-bottom-left-radius: 4px;\n      border-bottom-right-radius: 4px;\n      border-bottom-color: transparent;\n      border-bottom-style: solid;\n      border-bottom-width: thin; }\n    .igv-trackgear-popover > div:not(:first-child) > div:hover {\n      background: #efefef; }\n\n.igv-trackgear-popover-shim {\n  padding-left: 8px;\n  padding-right: 8px; }\n\n.igv-trackgear-popover-header {\n  position: relative;\n  width: 100%;\n  height: 24px;\n  cursor: move;\n  border-top-color: transparent;\n  border-top-left-radius: 4px;\n  border-top-right-radius: 4px;\n  border-bottom-color: #7F7F7F;\n  border-bottom-style: solid;\n  border-bottom-width: thin;\n  background-color: #eee;\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-end;\n  align-items: center; }\n  .igv-trackgear-popover-header div {\n    margin-right: 4px;\n    height: 12px;\n    width: 12px;\n    color: #7F7F7F; }\n  .igv-trackgear-popover-header div:hover {\n    cursor: pointer;\n    color: #444; }\n\n.igv-trackgear-popover-check-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center;\n  width: 100%;\n  height: 20px;\n  background-color: transparent; }\n  .igv-trackgear-popover-check-container div {\n    padding-top: 2px;\n    padding-left: 8px; }\n  .igv-trackgear-popover-check-container div:first-child {\n    position: relative;\n    width: 12px;\n    height: 12px; }\n    .igv-trackgear-popover-check-container div:first-child svg {\n      position: absolute;\n      width: 12px;\n      height: 12px; }\n\n.igvControlDiv {\n  position: relative; }\n\n.igv-content-header {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: flex-start;\n  align-items: center;\n  margin-top: 10px;\n  height: 16px;\n  width: 100%; }\n  .igv-content-header .igv-ideogram-shim {\n    height: 100%;\n    width: 50px;\n    background-color: white; }\n  .igv-content-header .igv-ideogram-content {\n    height: 100%;\n    background-color: white; }\n  .igv-content-header .igv-ideogram-content-border-right {\n    border-right-color: #292929;\n    border-right-style: solid;\n    border-right-width: 1px; }\n\n.igv-multi-locus-panel-border {\n  position: absolute;\n  top: 0;\n  left: 0;\n  height: 100%;\n  width: 1px;\n  background-color: green;\n  border-right-color: #ff0000;\n  border-right-style: solid;\n  border-right-width: 1px; }\n\n.igv-navbar {\n  position: relative;\n  padding-left: 8px;\n  padding-right: 8px;\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  color: #444;\n  font-size: 12px;\n  font-family: \"Open Sans\", sans-serif;\n  font-weight: 400;\n  line-height: 32px;\n  margin-top: 2px;\n  margin-bottom: 4px;\n  height: 32px;\n  border-style: solid;\n  border-radius: 3px;\n  border-width: thin;\n  border-color: #bfbfbf;\n  background-color: #f3f3f3; }\n\n.igv-nav-bar-left-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  height: 32px;\n  line-height: 32px; }\n  .igv-nav-bar-left-container .igv-logo {\n    width: 34px;\n    height: 32px;\n    margin-top: 6px;\n    margin-right: 8px; }\n  .igv-nav-bar-left-container .igv-current-genome {\n    height: 32px;\n    width: 40px;\n    margin-left: 4px;\n    margin-right: 4px;\n    user-select: none;\n    line-height: 32px;\n    vertical-align: middle;\n    text-align: center; }\n\n.igv-nav-bar-genomic-location {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  height: 100%; }\n\n.igv-chromosome-select-widget-container {\n  height: 100%;\n  width: 125px;\n  margin-right: 4px;\n  display: flex;\n  flex-flow: column;\n  flex-wrap: nowrap;\n  justify-content: space-around;\n  align-items: center; }\n  .igv-chromosome-select-widget-container select {\n    display: block;\n    cursor: pointer;\n    width: 100px;\n    height: 75%;\n    outline: none;\n    font-size: 12px;\n    font-family: \"Open Sans\", sans-serif;\n    font-weight: 400; }\n\n.igv-locus-size-group {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  margin-left: 8px;\n  height: calc(32px - 10px); }\n  .igv-locus-size-group .igv-search-container {\n    width: 200px;\n    height: calc(32px - 10px);\n    line-height: calc(32px - 10px);\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-start;\n    align-items: center; }\n    .igv-locus-size-group .igv-search-container input {\n      cursor: text;\n      width: 85%;\n      height: calc(32px - 10px);\n      line-height: calc(32px - 10px);\n      font-size: 12px;\n      font-family: \"Open Sans\", sans-serif;\n      font-weight: 400;\n      text-align: left;\n      padding-left: 8px;\n      margin-right: 8px;\n      outline: none;\n      border-style: solid;\n      border-radius: 3px;\n      border-width: thin;\n      border-color: #bfbfbf;\n      background-color: white; }\n    .igv-locus-size-group .igv-search-container div {\n      cursor: pointer;\n      height: 16px;\n      width: 16px; }\n  .igv-locus-size-group .igv-windowsizepanel-content-div {\n    margin-left: 4px;\n    user-select: none; }\n\n.igv-nav-bar-right-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  align-items: center;\n  height: 32px;\n  line-height: 32px; }\n  .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container {\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: space-between;\n    align-items: center;\n    height: 100%; }\n    .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container div {\n      margin-left: 0;\n      margin-right: 4px; }\n    .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container div:last-child {\n      margin-left: 0;\n      margin-right: 0; }\n  .igv-nav-bar-right-container .igv-nav-bar-toggle-button-container-750 {\n    display: none; }\n  .igv-nav-bar-right-container .igv-zoom-widget {\n    color: #737373;\n    font-size: 18px;\n    height: 32px;\n    line-height: 32px;\n    margin-left: 8px;\n    user-select: none;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center; }\n    .igv-nav-bar-right-container .igv-zoom-widget div {\n      cursor: pointer;\n      margin-left: unset;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget div:first-child {\n      height: 24px;\n      width: 24px;\n      margin-left: unset;\n      margin-right: 8px; }\n    .igv-nav-bar-right-container .igv-zoom-widget div:last-child {\n      height: 24px;\n      width: 24px;\n      margin-left: 8px;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget div:nth-child(even) {\n      display: block;\n      height: fit-content; }\n    .igv-nav-bar-right-container .igv-zoom-widget input {\n      display: block;\n      width: 125px; }\n    .igv-nav-bar-right-container .igv-zoom-widget svg {\n      display: block; }\n  .igv-nav-bar-right-container .igv-zoom-widget-900 {\n    color: #737373;\n    font-size: 18px;\n    height: 32px;\n    line-height: 32px;\n    margin-left: 8px;\n    user-select: none;\n    display: flex;\n    flex-flow: row;\n    flex-wrap: nowrap;\n    justify-content: flex-end;\n    align-items: center; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div {\n      cursor: pointer;\n      margin-left: unset;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div:first-child {\n      height: 24px;\n      width: 24px;\n      margin-left: unset;\n      margin-right: 8px; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div:last-child {\n      height: 24px;\n      width: 24px;\n      margin-left: 8px;\n      margin-right: unset; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 div:nth-child(even) {\n      width: 0;\n      height: 0;\n      display: none; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 input {\n      width: 0;\n      height: 0;\n      display: none; }\n    .igv-nav-bar-right-container .igv-zoom-widget-900 svg {\n      display: block; }\n  .igv-nav-bar-right-container .igv-zoom-widget-hidden {\n    display: none; }\n\n.igv-nav-bar-button {\n  box-sizing: unset;\n  padding-left: 6px;\n  padding-right: 6px;\n  height: 18px;\n  text-transform: capitalize;\n  user-select: none;\n  line-height: 18px;\n  text-align: center;\n  vertical-align: middle;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 11px;\n  font-weight: 200;\n  color: #737373;\n  background-color: #f3f3f3;\n  border-color: #737373;\n  border-style: solid;\n  border-width: thin;\n  border-radius: 6px; }\n\n.igv-nav-bar-button-clicked {\n  color: white;\n  background-color: #737373; }\n\n.igv-nav-bar-button:hover {\n  cursor: pointer; }\n\n.igv-logo-nonav {\n  margin-left: 4px;\n  margin-top: 12px;\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 34px;\n  height: 16px; }\n\n.igv-search-results {\n  position: absolute;\n  top: 32px;\n  left: 2px;\n  height: 320px;\n  width: 213px;\n  background-color: white;\n  border-color: #7F7F7F;\n  border-style: solid;\n  border-width: thin;\n  overflow-x: hidden;\n  overflow-y: auto;\n  z-index: 9999; }\n  .igv-search-results tr {\n    font-family: \"Open Sans\", sans-serif;\n    font-size: small;\n    font-weight: 400;\n    color: #444; }\n  .igv-search-results tr:hover,\n  .igv-search-results tr:focus,\n  .igv-search-results tr:active {\n    cursor: pointer;\n    font-weight: 700;\n    color: #141414; }\n\n.igv-root-div {\n  position: relative;\n  left: 0;\n  right: 0;\n  height: auto;\n  margin-left: 10px;\n  margin-right: 10px;\n  padding-top: 4px; }\n\n.igv-content-div {\n  position: relative;\n  width: 100%;\n  height: 100%; }\n\n.igv-track-container-div {\n  user-select: none;\n  position: relative;\n  clear: both; }\n\n.igv-track-div {\n  position: relative;\n  width: 100%; }\n\n.igv-viewport-container {\n  position: absolute;\n  left: 50px;\n  right: 50px;\n  height: 100%;\n  white-space: nowrap;\n  overflow-x: hidden;\n  overflow-y: hidden; }\n\n.igv-viewport-div {\n  position: relative;\n  display: inline-block;\n  height: 100%;\n  overflow-x: hidden;\n  overflow-y: hidden; }\n\n.igv-viewport-content-div {\n  position: absolute;\n  width: 100%; }\n\n.igv-viewport-message {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  color: rgba(0, 0, 0, 0.15);\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 25px;\n  font-weight: bold;\n  user-select: none; }\n\n.igv-whole-genome-container {\n  display: flex;\n  flex-flow: row;\n  flex-wrap: nowrap;\n  justify-content: space-between;\n  width: 100%;\n  height: 100%;\n  background-color: white; }\n  .igv-whole-genome-container div {\n    font-family: \"Open Sans\", sans-serif;\n    font-size: 10px;\n    font-weight: 400;\n    color: #444;\n    height: 100%;\n    text-align: center;\n    border-right-color: #bfbfbf;\n    border-right-style: solid;\n    border-right-width: thin; }\n    .igv-whole-genome-container div span {\n      display: block;\n      padding-top: 6px;\n      text-overflow: ellipsis; }\n  .igv-whole-genome-container div:last-child {\n    border-right-color: transparent; }\n  .igv-whole-genome-container div:hover,\n  .igv-whole-genome-container div:focus,\n  .igv-whole-genome-container div:active {\n    cursor: pointer;\n    background-color: #efefef; }\n\n.igv-viewport-div-border-right {\n  border-right-color: #292929;\n  border-right-style: solid;\n  border-right-width: 1px; }\n\n.igv-multi-locus-panel-close-container {\n  position: absolute;\n  top: 4px;\n  right: 4px;\n  width: 16px;\n  height: 16px;\n  color: #666666;\n  z-index: 1000; }\n\n.igv-multi-locus-panel-close-container:hover {\n  cursor: pointer;\n  color: #434343; }\n\n.igv-multi-locus-panel-label-div {\n  position: absolute;\n  left: 50%;\n  top: 25%;\n  transform: translate(-50%, -25%);\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 12px;\n  font-weight: 400;\n  text-align: center;\n  min-width: 16px;\n  z-index: 64;\n  color: #373737;\n  background-color: white;\n  padding: 1px; }\n\n.igv-multi-locus-panel-label-div:hover {\n  cursor: pointer; }\n\n.igv-viewport-ruler {\n  cursor: pointer;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 10px;\n  font-weight: 200;\n  text-align: center; }\n  .igv-viewport-ruler > div {\n    height: 100%; }\n\n.igv-viewport-sequence {\n  font-family: \"Open Sans\", sans-serif;\n  font-size: 8px;\n  font-weight: 200;\n  text-align: center; }\n\n.igv-viewport-spinner {\n  position: absolute;\n  top: 50%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  z-index: 1024;\n  width: 24px;\n  height: 24px;\n  pointer-events: none;\n  color: #737373; }\n\n.igv-track-container-spinner {\n  position: absolute;\n  top: 90%;\n  left: 50%;\n  transform: translate(-50%, -50%);\n  z-index: 1024;\n  width: 24px;\n  height: 24px;\n  pointer-events: none;\n  color: #737373; }\n\n.igv-ruler-sweeper-div {\n  display: none;\n  pointer-events: none;\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 0;\n  height: 100%;\n  z-index: 99999;\n  background-color: rgba(68, 134, 247, 0.25); }\n\n.igv-right-hand-gutter {\n  position: absolute;\n  right: 0;\n  width: 36px;\n  height: 100%;\n  background: white;\n  margin-top: 5px;\n  margin-bottom: 5px; }\n\n.igv-left-hand-gutter {\n  position: absolute;\n  left: 0;\n  width: 50px;\n  height: 100%;\n  margin-top: 5px;\n  margin-bottom: 5px; }\n  .igv-left-hand-gutter canvas {\n    position: absolute; }\n\n.igv-track-menu-border-top {\n  border-top-color: #a2a2a2;\n  border-top-style: solid;\n  border-top-width: thin; }\n\n.igv-track-menu-category {\n  padding-left: 4px;\n  font-weight: 400; }\n\n.igv-track-drag-scrim {\n  position: absolute;\n  left: 0;\n  top: 0;\n  width: 100%;\n  height: 100%;\n  margin-top: 5px;\n  margin-bottom: 5px;\n  z-index: 256;\n  background-color: rgba(68, 134, 247, 0.25); }\n\n.igv-track-manipulation-handle {\n  cursor: pointer;\n  position: absolute;\n  right: 36px;\n  width: 12px;\n  margin-left: 2px;\n  margin-top: 5px;\n  margin-bottom: 5px;\n  height: 100%;\n  box-sizing: border-box;\n  font-size: medium;\n  border-color: #c4c4c4;\n  border-style: solid;\n  border-width: thin;\n  border-top-right-radius: 6px;\n  border-bottom-right-radius: 6px;\n  z-index: 512;\n  background-color: #c4c4c4; }\n\n.igv-track-manipulation-handle:hover,\n.igv-track-manipulation-handle:focus,\n.igv-track-manipulation-handle:active {\n  border-color: #7e7e7e;\n  background-color: #7e7e7e; }\n\n.igv-track-label {\n  position: absolute;\n  left: 8px;\n  top: 4px;\n  width: auto;\n  height: auto;\n  max-width: 200px;\n  padding-left: 4px;\n  padding-right: 4px;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  font-family: \"Open Sans\", sans-serif;\n  font-size: small;\n  font-weight: 400;\n  text-align: center;\n  user-select: none;\n  -moz-user-select: none;\n  -webkit-user-select: none;\n  border-color: #444;\n  border-radius: 2px;\n  border-style: solid;\n  border-width: thin;\n  background-color: white;\n  z-index: 128;\n  cursor: pointer; }\n\n.igv-track-label:hover,\n.igv-track-label:focus,\n.igv-track-label:active {\n  background-color: rgba(0, 0, 0, 0.05); }\n\n.igv-scrollbar-outer-div {\n  position: absolute;\n  top: 0;\n  right: 0;\n  width: 14px;\n  height: 100%;\n  margin-top: 5px;\n  margin-bottom: 5px;\n  background-color: white; }\n  .igv-scrollbar-outer-div div {\n    position: absolute;\n    top: 0;\n    left: 3px;\n    width: 8px;\n    border-style: solid;\n    border-width: thin;\n    border-color: #c4c4c4;\n    border-top-left-radius: 4px;\n    border-top-right-radius: 4px;\n    border-bottom-left-radius: 4px;\n    border-bottom-right-radius: 4px;\n    background-color: white; }\n  .igv-scrollbar-outer-div div:hover,\n  .igv-scrollbar-outer-div div:focus,\n  .igv-scrollbar-outer-div div:active {\n    cursor: pointer;\n    background-color: #c4c4c4; }\n\n.zoom-in-notice-container {\n  position: absolute;\n  top: 10px;\n  left: 50%; }\n  .zoom-in-notice-container div {\n    position: relative;\n    left: -50%;\n    font-family: \"Open Sans\", sans-serif;\n    font-size: medium;\n    font-weight: 400;\n    color: #3f3f3f;\n    background-color: rgba(255, 255, 255, 0.51);\n    z-index: 64; }\n\n.igv-center-guide {\n  pointer-events: none;\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 50%;\n  width: 8px;\n  z-index: 8;\n  display: none;\n  user-select: none;\n  -moz-user-select: none;\n  -webkit-user-select: none;\n  border-left-style: dashed;\n  border-left-width: thin;\n  border-right-style: dashed;\n  border-right-width: thin; }\n\n.igv-center-guide-wide {\n  background-color: rgba(0, 0, 0, 0);\n  border-left-color: rgba(127, 127, 127, 0.51);\n  border-right-color: rgba(127, 127, 127, 0.51); }\n\n.igv-center-guide-thin {\n  left: 50%;\n  width: 1px;\n  background-color: rgba(0, 0, 0, 0);\n  border-left-color: rgba(127, 127, 127, 0.51);\n  border-right-color: rgba(0, 0, 0, 0);\n  /*background-color: rgba(127, 127, 127, 0.51);*/\n  /*border-left-color: rgba(0,0,0,0);*/\n  /*border-right-color: rgba(0,0,0,0);*/ }\n\n.igv-cursor-tracking-guide {\n  pointer-events: none;\n  position: absolute;\n  top: 0;\n  bottom: 0;\n  left: 50%;\n  width: 1px;\n  z-index: 1;\n  border-left-style: dotted;\n  border-left-width: thin;\n  border-left-color: rgba(127, 127, 127, 0.76);\n  display: none;\n  user-select: none;\n  -moz-user-select: none;\n  -webkit-user-select: none; }\n\n.igv-clickable {\n  cursor: pointer;\n  background-color: white; }\n\n#color-by-tag {\n  color: #444; }\n\n#color-by-tag:hover,\n#color-by-tag:focus,\n#color-by-tag:active {\n  cursor: pointer;\n  padding-left: 2px;\n  padding-right: 2px;\n  color: white;\n  border-color: #444;\n  border-radius: 2px;\n  border-style: solid;\n  border-width: thin;\n  background-color: #7f7f7f; }\n\n.igv-ellipsis {\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis; }\n\n.igv-spinner-container {\n  color: #3f3f3f;\n  width: 100%;\n  height: 100%;\n  text-align: center;\n  padding-top: 8px;\n  font-size: 24px;\n  z-index: 512; }\n\n.igv-fa-check-visible {\n  color: inherit;\n  padding-right: 2px; }\n\n.igv-fa-check-hidden {\n  color: transparent;\n  padding-right: 2px; }\n\n.validateTips {\n  border: 1px solid transparent;\n  padding: 0.3em; }\n  .validateTips fieldset {\n    border: 0; }\n\n.igv-spacer-10 {\n  height: 10px;\n  width: 100%;\n  font-size: 0;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  display: block; }\n\n.igv-fa5-spin {\n  -webkit-animation: igv-fa5-spin 2s infinite linear;\n  animation: igv-fa5-spin 2s infinite linear; }\n\n@-webkit-keyframes igv-fa5-spin {\n  0% {\n    -webkit-transform: rotate(0deg);\n    transform: rotate(0deg); }\n  100% {\n    -webkit-transform: rotate(360deg);\n    transform: rotate(360deg); } }\n@keyframes igv-fa5-spin {\n  0% {\n    -webkit-transform: rotate(0deg);\n    transform: rotate(0deg); }\n  100% {\n    -webkit-transform: rotate(360deg);\n    transform: rotate(360deg); } }\n\n/*# sourceMappingURL=igv.css.map */\n';
 	  var style = document.createElement('style');
 	  style.setAttribute('type', 'text/css');
 	  style.innerHTML = css;
